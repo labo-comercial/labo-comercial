@@ -273,7 +273,18 @@ tr:hover td{background:#F5F3ED}
   </div>
 </div>
 
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js" crossorigin="anonymous"></script>
+<script>
+// Fallback: if unpkg fails, try cdn.jsdelivr.net
+window.addEventListener('load', function() {
+  if (typeof msal === 'undefined') {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js';
+    s.crossOrigin = 'anonymous';
+    document.head.appendChild(s);
+  }
+});
+</script>
 <script>
 
 // ── SharePoint / Microsoft Graph storage layer ────────────────────────────────
@@ -292,6 +303,12 @@ const MSAL_CONFIG = {
 };
 let msalInstance=null,graphToken=null,siteId=null,driveId=null;
 async function initMSAL(){
+  var waited=0;
+  while(typeof msal==='undefined'&&waited<5000){
+    await new Promise(function(r){setTimeout(r,100);});
+    waited+=100;
+  }
+  if(typeof msal==='undefined')throw new Error('MSAL no pudo cargar.');
   if(msalInstance)return true;
   const cfg={auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}};
   msalInstance=new msal.PublicClientApplication(cfg);
