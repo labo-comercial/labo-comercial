@@ -1001,8 +1001,19 @@ async function _mergePDFs(jspdfDoc,linea,modelKey){
     await _initMSAL();await _getSiteDrive();
     var catFileName=linea==='modular'?'cat_modular.pdf':'cat_madera.pdf';
     var catPath=MSAL_CONFIG.dataFolder+'/'+catFileName;
+    console.log('Buscando catálogo en:', '/drives/'+_driveId+'/root:/'+catPath+':/content');
+    console.log('driveId:', _driveId);
+    console.log('siteId:', _siteId);
     var catRes=await _gFetch('/drives/'+_driveId+'/root:/'+catPath+':/content');
-    if(!catRes.ok)throw new Error('Catálogo no encontrado en SharePoint ('+catFileName+'). Subilo a la carpeta LABO-CRM.');
+    console.log('Respuesta catálogo:', catRes.status, catRes.statusText);
+    if(!catRes.ok){
+      // Try listing folder to debug
+      var listRes=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+':/children');
+      var listJson=listRes.ok?await listRes.json():{error:'no se pudo listar'};
+      var files=listJson.value?listJson.value.map(function(f){return f.name;}).join(', '):'carpeta no encontrada';
+      console.log('Archivos en LABO-CRM:', files);
+      throw new Error('Catálogo no encontrado en SharePoint ('+catFileName+'). Archivos en LABO-CRM: '+files+'. Subilo a la carpeta LABO-CRM.');
+    }
     var catBuffer=await catRes.arrayBuffer();
 
     // Merge with offer
