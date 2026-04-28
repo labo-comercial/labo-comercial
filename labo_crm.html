@@ -427,7 +427,7 @@ const MSAL_CONFIG={
   tenantDomain:'4housing22.sharepoint.com',
   authority:'https://login.microsoftonline.com/c408b6d8-ae0b-4d30-9056-da52e18116c4',
   redirectUri:'https://labo-comercial.github.io/labo-comercial/labo_crm.html',
-  scopes:['https://graph.microsoft.com/Files.ReadWrite.All','https://graph.microsoft.com/Sites.ReadWrite.All'],
+  scopes:['https://graph.microsoft.com/Files.ReadWrite.All','https://graph.microsoft.com/Sites.ReadWrite.All','https://4housing22.sharepoint.com/AllSites.Write'],
   dataFile:'labo_crm_data.json',dataFolder: '02 PLACE/01 GERENCIA COMERCIAL/RC-01 COTIZACIONES/0000 CLIENTE - DESCRIPCION (PLANTILLAS)/03 COSTEO/LABO/LABO-CRM'
 };
 let msalInst=null,gToken=null,siteId=null,driveId=null;
@@ -448,10 +448,18 @@ async function gFetch(url,opts){
 }
 async function getSiteDrive(){
   if(siteId&&driveId)return;
+  console.log('Getting site, token:', gToken?gToken.substring(0,20)+'...':'null');
   const s=await gFetch('/sites/'+MSAL_CONFIG.tenantDomain+':'+MSAL_CONFIG.sitePath);
-  siteId=(await s.json()).id;
+  const sJson=await s.json();
+  console.log('Site response:', s.status, JSON.stringify(sJson).substring(0,100));
+  if(!s.ok)throw new Error('No se pudo acceder al sitio SharePoint: '+s.status+' '+JSON.stringify(sJson));
+  siteId=sJson.id;
   const d=await gFetch('/sites/'+siteId+'/drive');
-  driveId=(await d.json()).id;
+  const dJson=await d.json();
+  console.log('Drive response:', d.status, JSON.stringify(dJson).substring(0,100));
+  if(!d.ok)throw new Error('No se pudo acceder al drive: '+d.status);
+  driveId=dJson.id;
+  console.log('siteId:', siteId, 'driveId:', driveId);
 }
 async function readLeads(){
   try{
