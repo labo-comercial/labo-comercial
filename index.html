@@ -838,7 +838,35 @@ function initApp(){
 }
 
 // Safari-safe init
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initApp);}else{initApp();}
+async function initAll(){
+  // Pre-initialize MSAL to capture redirect token before user clicks anything
+  try{
+    var w=0;while(typeof msal==='undefined'&&w<3000){await new Promise(r=>setTimeout(r,100));w+=100;}
+    if(typeof msal!=='undefined'){
+      _msalInst=new msal.PublicClientApplication({
+        auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},
+        cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:true,secureCookies:false}
+      });
+      await _msalInst.initialize();
+      const resp=await _msalInst.handleRedirectPromise();
+      if(resp&&resp.accessToken){
+        _gToken=resp.accessToken;
+        console.log('MSAL pre-init: token captured from redirect');
+      } else {
+        const acc=_msalInst.getAllAccounts();
+        if(acc.length>0){
+          try{
+            const r=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});
+            _gToken=r.accessToken;
+            console.log('MSAL pre-init: token captured silently');
+          }catch(e){}
+        }
+      }
+    }
+  }catch(e){console.warn('MSAL pre-init error:',e);}
+  initApp();
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initAll);}else{initAll();}
 
 function buildGrid(){
   const gm=document.getElementById('mgrid-mad');
@@ -1358,28 +1386,39 @@ const MSAL_CONFIG = {
 };
 let _msalInst=null,_gToken=null,_siteId=null,_driveId=null;
 async function _initMSAL(){
-  // Wait up to 5s for MSAL to load
-  var waited=0;
-  while(typeof msal==='undefined'&&waited<5000){
-    await new Promise(function(r){setTimeout(r,100);});
-    waited+=100;
+  var w=0;
+  while(typeof msal==='undefined'&&w<5000){await new Promise(function(r){setTimeout(r,100);});w+=100;}
+  if(typeof msal==='undefined')throw new Error('MSAL no pudo cargar.');
+  if(!_msalInst){
+    _msalInst=new msal.PublicClientApplication({
+      auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},
+      cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:true,secureCookies:false}
+    });
+    await _msalInst.initialize();
   }
-  if(typeof msal==='undefined')throw new Error('MSAL no pudo cargar. Verificá tu conexión a internet.');
-  if(_msalInst)return true;
-  _msalInst=new msal.PublicClientApplication({auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});
-  await _msalInst.initialize();
-  try{const resp=await _msalInst.handleRedirectPromise();if(resp&&resp.accessToken){_gToken=resp.accessToken;return true;}}catch(e){console.warn('handleRedirect:',e);}
-  const acc=_msalInst.getAllAccounts();
-  if(acc.length>0){try{const r=await _msalInst.acquireTokenSilent({scopes:MSAL_CONFIG.scopes,account:acc[0]});_gToken=r.accessToken;return true;}catch(e){}}
+  if(_gToken)return true;
+  // Handle redirect (Safari)
   try{
-    var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if(isSafari){
-      await _msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
-      return false;
-    }
-    const r=await _msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
-    _gToken=r.accessToken;return true;
-  }catch(e){return false;}
+    var resp=await _msalInst.handleRedirectPromise();
+    if(resp&&resp.accessToken){_gToken=resp.accessToken;console.log('Token from redirect OK, len:',_gToken.length);return true;}
+  }catch(e){console.warn('handleRedirect:',e);}
+  // Silent
+  var acc=_msalInst.getAllAccounts();
+  if(acc.length>0){
+    try{
+      var r=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});
+      _gToken=r.accessToken;console.log('Token silent OK, len:',_gToken.length);return true;
+    }catch(e){console.warn('Silent failed:',e);}
+  }
+  // Login
+  var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if(isSafari){
+    await _msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
+    return false;
+  }else{
+    var r2=await _msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
+    _gToken=r2.accessToken;return true;
+  }
 }
 async function _gFetch(url,opts){
   if(!_gToken)await _initMSAL();
