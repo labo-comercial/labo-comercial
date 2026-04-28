@@ -1421,7 +1421,46 @@ async function _initMSAL(){
   // Handle redirect (Safari)
   try{
     var resp=await _msalInst.handleRedirectPromise();
-    if(resp&&resp.accessToken){_gToken=resp.accessToken;console.log('Token from redirect OK, len:',_gToken.length);return true;}
+    if(resp&&resp.accessToken){
+      _gToken=resp.accessToken;
+      console.log('Token from redirect OK, len:',_gToken.length);
+      // Restore state — auto-generate PDF after redirect
+      try{
+        if(sessionStorage.getItem('labo_redirect_pending')==='1'){
+          sessionStorage.removeItem('labo_redirect_pending');
+          sessionStorage.removeItem('labo_redirect_step');
+          var savedState=sessionStorage.getItem('labo_redirect_state');
+          sessionStorage.removeItem('labo_redirect_state');
+          if(savedState){
+            var st=JSON.parse(savedState);
+            // Restore model selection
+            if(st.sel)selModel(st.sel);
+            // Restore options
+            if(st.opts){
+              opts=st.opts;
+              Object.entries(st.opts).forEach(function(kv){
+                var yb=document.getElementById('yes_'+kv[0]);
+                var nb=document.getElementById('no_'+kv[0]);
+                if(kv[1]&&yb&&nb){yb.classList.add('active-yes');nb.classList.remove('active-no');}
+              });
+            }
+            // Restore km
+            if(st.kmVal){var ki=document.getElementById('kminput');if(ki){ki.value=st.kmVal;onKm(st.kmVal);}}
+            // Restore client data
+            var fields=['cNombre','cContacto','cEmail','cTel','oLugar','oVendedor','oNum','oFecha','oPlazo','oNotas','oValidez'];
+            fields.forEach(function(f){var el=document.getElementById(f);if(el&&st[f])el.value=st[f];});
+            if(st.cant){var ce=document.getElementById('cant');if(ce)ce.value=st.cant;}
+            if(st.oPago){var pe=document.getElementById('oPago');if(pe)pe.value=st.oPago;}
+          }
+          // Go to step 3 and generate PDF
+          setTimeout(function(){
+            goStep(3);
+            setTimeout(_doGeneratePDF, 600);
+          }, 500);
+        }
+      }catch(e){console.warn('State restore error:',e);}
+      return true;
+    }
   }catch(e){console.warn('handleRedirect:',e);}
   // Silent
   var acc=_msalInst.getAllAccounts();
@@ -1434,6 +1473,21 @@ async function _initMSAL(){
   // Login
   var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   if(isSafari){
+    // Save current state before redirect
+    try{
+      sessionStorage.setItem('labo_redirect_pending','1');
+      sessionStorage.setItem('labo_redirect_step','3');
+      // Save cotizador state
+      var state={
+        sel:sel, opts:opts, kmVal:kmVal,
+        cant:document.getElementById('cant')?document.getElementById('cant').value:'1',
+        cNombre:gv('cNombre'),cContacto:gv('cContacto'),cEmail:gv('cEmail'),
+        cTel:gv('cTel'),oLugar:gv('oLugar'),oVendedor:gv('oVendedor'),
+        oNum:gv('oNum'),oFecha:gv('oFecha'),oPago:document.getElementById('oPago')?document.getElementById('oPago').value:'',
+        oPlazo:gv('oPlazo'),oNotas:gv('oNotas'),oValidez:gv('oValidez')
+      };
+      sessionStorage.setItem('labo_redirect_state',JSON.stringify(state));
+    }catch(e){}
     await _msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
     return false;
   }else{
