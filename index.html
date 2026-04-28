@@ -839,32 +839,52 @@ function initApp(){
 
 // Safari-safe init
 async function initAll(){
-  // Pre-initialize MSAL to capture redirect token before user clicks anything
-  try{
-    var w=0;while(typeof msal==='undefined'&&w<3000){await new Promise(r=>setTimeout(r,100));w+=100;}
-    if(typeof msal!=='undefined'){
-      _msalInst=new msal.PublicClientApplication({
-        auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},
-        cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:true,secureCookies:false}
-      });
-      await _msalInst.initialize();
-      const resp=await _msalInst.handleRedirectPromise();
-      if(resp&&resp.accessToken){
-        _gToken=resp.accessToken;
-        console.log('MSAL pre-init: token captured from redirect');
-      } else {
-        const acc=_msalInst.getAllAccounts();
-        if(acc.length>0){
-          try{
-            const r=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});
-            _gToken=r.accessToken;
-            console.log('MSAL pre-init: token captured silently');
-          }catch(e){}
-        }
-      }
-    }
-  }catch(e){console.warn('MSAL pre-init error:',e);}
   initApp();
+  // Authenticate immediately on page load — before user does anything
+  try{
+    var w=0;
+    while(typeof msal==='undefined'&&w<5000){await new Promise(function(r){setTimeout(r,100);});w+=100;}
+    if(typeof msal==='undefined')return;
+    _msalInst=new msal.PublicClientApplication({
+      auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},
+      cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:true,secureCookies:false}
+    });
+    await _msalInst.initialize();
+    // Handle redirect response first
+    var resp=await _msalInst.handleRedirectPromise();
+    if(resp&&resp.accessToken){
+      _gToken=resp.accessToken;
+      console.log('Autenticado via redirect OK');
+      return;
+    }
+    // Try silent
+    var acc=_msalInst.getAllAccounts();
+    if(acc.length>0){
+      try{
+        var r=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});
+        _gToken=r.accessToken;
+        console.log('Autenticado silencioso OK');
+        return;
+      }catch(e){console.warn('Silent failed, doing login:',e);}
+    }
+    // No token — login immediately
+    var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if(isSafari){
+      // Redirect login for Safari
+      await _msalInst.loginRedirect({
+        scopes:['https://graph.microsoft.com/.default'],
+        redirectUri:MSAL_CONFIG.redirectUri
+      });
+    } else {
+      // Popup login for Chrome/others
+      var r2=await _msalInst.loginPopup({
+        scopes:['https://graph.microsoft.com/.default'],
+        redirectUri:MSAL_CONFIG.redirectUri
+      });
+      _gToken=r2.accessToken;
+      console.log('Autenticado via popup OK');
+    }
+  }catch(e){console.warn('Auth error on load:',e);}
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initAll);}else{initAll();}
 
@@ -1007,13 +1027,7 @@ const CATALOG_COMMON_AFTER_MODULAR=Array.from({length:11},(_,i)=>i+20); // 20-30
 
 function generatePDF(){
   if(typeof window.jspdf==='undefined'){alert('El generador de PDF está cargando. Intentá de nuevo.');return;}
-  // Pre-authenticate before generating — ensures token is ready
-  _initMSAL().then(function(ready){
-    if(ready===false)return; // Safari redirect in progress
-    _doGeneratePDF();
-  }).catch(function(){
-    _doGeneratePDF(); // proceed anyway, will fail gracefully if no token
-  });
+  _doGeneratePDF();
 }
 function _doGeneratePDF(){
   var doc=_buildOfferPDF();
