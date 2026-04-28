@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LABO — CRM Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0A0A0A;--white:#F5F4F0;--grey:#E8E6E0;--mid:#9A9690;
+  --green:#2D6A4F;--green-l:#52B788;
+  --red:#C0392B;--amber:#D4870A;--blue:#1A5276;
+  --etapa-cotizado:#1A5276;
+  --etapa-propuesta:#7D4E27;
+  --etapa-negociacion:#5B2C6F;
+  --etapa-ganado:#1E8449;
+  --etapa-perdido:#922B21;
+  --border:#D8D5CE;--card:#FAFAF7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--black);min-height:100vh}
+
+/* ── HEADER ── */
+.hdr{background:var(--black);color:var(--white);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #222}
+.hdr-logo svg{height:20px}
+.hdr-right{display:flex;align-items:center;gap:20px}
+.hdr-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;opacity:.5}
+.hdr-actions{display:flex;gap:8px}
+.btn-sm{padding:6px 14px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.btn-sm:hover{background:rgba(255,255,255,.1)}
+.btn-sm.active{background:var(--white);color:var(--black)}
+
+/* ── LAYOUT ── */
+.main{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 53px)}
+.sidebar{background:#F0EEE8;border-right:1px solid var(--border);padding:24px 0}
+.content{padding:28px;overflow:auto}
+
+/* ── SIDEBAR ── */
+.s-section{padding:0 16px;margin-bottom:24px}
+.s-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mid);text-transform:uppercase;margin-bottom:10px;padding:0 4px}
+.s-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;border-radius:2px;transition:background .12s;font-size:13px;font-weight:500}
+.s-item:hover{background:rgba(0,0,0,.05)}
+.s-item.active{background:var(--black);color:var(--white)}
+.s-count{font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.6}
+.s-divider{height:1px;background:var(--border);margin:8px 16px}
+
+/* ── KPIS ── */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:var(--card);border:1px solid var(--border);padding:18px 20px}
+.kpi-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;color:var(--black);line-height:1}
+.kpi-sub{font-size:11px;color:var(--mid);margin-top:6px}
+.kpi.highlight{background:var(--black);border-color:var(--black)}
+.kpi.highlight .kpi-label,.kpi.highlight .kpi-sub{color:rgba(255,255,255,.4)}
+.kpi.highlight .kpi-value{color:var(--white)}
+
+/* ── PIPELINE BAR ── */
+.pipeline-bar{display:flex;gap:3px;margin-bottom:24px;height:6px}
+.pb-seg{border-radius:1px;transition:all .3s}
+.pipeline-legend{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.pl-item{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid)}
+.pl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--card);border:1px solid var(--border)}
+.table-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
+.table-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mid)}
+.search-wrap{position:relative}
+.search-wrap input{padding:6px 10px 6px 28px;border:1px solid var(--border);background:var(--white);font-family:'IBM Plex Sans',sans-serif;font-size:12px;outline:none;width:200px}
+.search-wrap::before{content:'⌕';position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--mid);font-size:14px}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:2px solid var(--black)}
+th{padding:10px 16px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);font-weight:500;cursor:pointer;white-space:nowrap;user-select:none}
+th:hover{color:var(--black)}
+th.sorted{color:var(--black)}
+th.sorted::after{content:' ↓';font-size:8px}
+th.sorted.asc::after{content:' ↑'}
+td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#F5F3ED}
+.td-cliente{font-weight:600}
+.td-muted{color:var(--mid);font-size:12px}
+.td-mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.td-total{font-family:'IBM Plex Mono',monospace;font-weight:500}
+
+/* ── ETAPA BADGE ── */
+.etapa{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:none;font-weight:500;transition:opacity .15s}
+.etapa:hover{opacity:.8}
+.etapa-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.e-cotizado{background:#D6E4F7;color:#1A5276}.e-cotizado .etapa-dot{background:#1A5276}
+.e-propuesta{background:#FAE5D3;color:#7D4E27}.e-propuesta .etapa-dot{background:#D4870A}
+.e-negociacion{background:#E8DAEF;color:#5B2C6F}.e-negociacion .etapa-dot{background:#7D3C98}
+.e-ganado{background:#D5F5E3;color:#1E8449}.e-ganado .etapa-dot{background:#1E8449}
+.e-perdido{background:#FADBD8;color:#922B21}.e-perdido .etapa-dot{background:#C0392B}
+
+/* ── DROPDOWN ── */
+.etapa-dropdown{position:relative;display:inline-block}
+.etapa-menu{display:none;position:absolute;top:100%;left:0;background:var(--white);border:1px solid var(--border);z-index:100;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.etapa-dropdown.open .etapa-menu{display:block}
+.etapa-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:transparent;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;text-align:left;transition:background .1s}
+.etapa-menu button:hover{background:#F0EEE8}
+
+/* ── PANEL DETALLE ── */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:flex-end}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--white);width:420px;height:100vh;overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.15)}
+.dp-hdr{background:var(--black);color:var(--white);padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
+.dp-title{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+.dp-close{background:none;border:none;color:var(--white);font-size:20px;cursor:pointer;opacity:.6;line-height:1}
+.dp-close:hover{opacity:1}
+.dp-body{padding:24px}
+.dp-section{margin-bottom:24px}
+.dp-section-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dp-field label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--mid);text-transform:uppercase;display:block;margin-bottom:3px}
+.dp-field span{font-size:13px;font-weight:500}
+.dp-field.full{grid-column:1/-1}
+.dp-total{background:var(--black);color:var(--white);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.dp-total-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.5}
+.dp-total-value{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500}
+
+/* Actividad */
+.nota-input{width:100%;padding:10px 12px;border:1px solid var(--border);background:var(--white);font-family:'IBM Plex Sans',sans-serif;font-size:13px;resize:vertical;min-height:70px;outline:none}
+.nota-input:focus{border-color:var(--black)}
+.btn-nota{width:100%;padding:10px;background:var(--black);color:var(--white);border:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:8px}
+.btn-nota:hover{opacity:.85}
+.actividad-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.act-item{padding:10px 12px;background:#F5F3ED;border-left:3px solid var(--border);font-size:12px}
+.act-fecha{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);margin-bottom:3px}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:60px 20px;color:var(--mid)}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:.4}
+.empty-text{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px}
+
+/* ── LINEA BADGE ── */
+.linea-badge{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 6px;letter-spacing:.5px}
+.lb-madera{background:#F0E6D3;color:#7D4E27}
+.lb-modular{background:#D6E4F7;color:#1A5276}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .main{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <svg viewBox="4 0 139 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="4" y="23" width="22" height="5" fill="#F5F4F0"/>
+    <rect x="38" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="59" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="38" y="0" width="26" height="5" fill="#F5F4F0"/>
+    <rect x="38" y="12" width="26" height="5" fill="#F5F4F0"/>
+    <rect x="76" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="76" y="0" width="25" height="5" fill="#F5F4F0"/>
+    <rect x="76" y="12" width="22" height="5" fill="#F5F4F0"/>
+    <rect x="76" y="23" width="25" height="5" fill="#F5F4F0"/>
+    <rect x="96" y="0" width="5" height="17" fill="#F5F4F0"/>
+    <rect x="96" y="11" width="5" height="17" fill="#F5F4F0"/>
+    <rect x="113" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="134" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="113" y="0" width="26" height="5" fill="#F5F4F0"/>
+    <rect x="113" y="23" width="26" height="5" fill="#F5F4F0"/>
+  </svg>
+  <div class="hdr-right">
+    <span class="hdr-label">CRM — Gerencia Comercial</span>
+    <div class="hdr-actions">
+      <button class="btn-sm" onclick="exportCSV()">↓ Exportar</button>
+      <button class="btn-sm" onclick="loadData()">↺ Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="s-section">
+      <div class="s-label">Vista</div>
+      <div class="s-item active" onclick="setFilter('all',this)">
+        Todos los leads <span class="s-count" id="cnt-all">0</span>
+      </div>
+    </div>
+    <div class="s-divider"></div>
+    <div class="s-section">
+      <div class="s-label">Etapa</div>
+      <div class="s-item" onclick="setFilter('etapa:Cotizado',this)">
+        Cotizado <span class="s-count" id="cnt-cotizado">0</span>
+      </div>
+      <div class="s-item" onclick="setFilter('etapa:Propuesta enviada',this)">
+        Propuesta enviada <span class="s-count" id="cnt-propuesta">0</span>
+      </div>
+      <div class="s-item" onclick="setFilter('etapa:En negociación',this)">
+        En negociación <span class="s-count" id="cnt-negociacion">0</span>
+      </div>
+      <div class="s-item" onclick="setFilter('etapa:Cerrado ganado',this)">
+        Cerrado ganado <span class="s-count" id="cnt-ganado">0</span>
+      </div>
+      <div class="s-item" onclick="setFilter('etapa:Cerrado perdido',this)">
+        Cerrado perdido <span class="s-count" id="cnt-perdido">0</span>
+      </div>
+    </div>
+    <div class="s-divider"></div>
+    <div class="s-section">
+      <div class="s-label">Línea</div>
+      <div class="s-item" onclick="setFilter('linea:LABO Madera',this)">
+        LABO Madera <span class="s-count" id="cnt-madera">0</span>
+      </div>
+      <div class="s-item" onclick="setFilter('linea:LABO Modular',this)">
+        LABO Modular <span class="s-count" id="cnt-modular">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi highlight">
+        <div class="kpi-label">Pipeline activo</div>
+        <div class="kpi-value" id="kpi-pipeline">USD 0</div>
+        <div class="kpi-sub" id="kpi-pipeline-sub">0 cotizaciones activas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Cerrado ganado</div>
+        <div class="kpi-value" id="kpi-ganado">USD 0</div>
+        <div class="kpi-sub" id="kpi-ganado-sub">0 operaciones</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Tasa de conversión</div>
+        <div class="kpi-value" id="kpi-conv">0%</div>
+        <div class="kpi-sub" id="kpi-conv-sub">ganado / total cerrado</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Ticket promedio</div>
+        <div class="kpi-value" id="kpi-ticket">USD 0</div>
+        <div class="kpi-sub" id="kpi-ticket-sub">sobre pipeline activo</div>
+      </div>
+    </div>
+
+    <!-- PIPELINE BAR -->
+    <div class="pipeline-bar" id="pipeline-bar"></div>
+    <div class="pipeline-legend" id="pipeline-legend"></div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <div class="table-hdr">
+        <span class="table-title" id="table-title">Todos los leads</span>
+        <div class="search-wrap">
+          <input type="text" placeholder="Buscar cliente, vendedor..." oninput="filterSearch(this.value)" id="searchInput">
+        </div>
+      </div>
+      <div id="table-container">
+        <div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Cargando cotizaciones...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detailPanel">
+    <div class="dp-hdr">
+      <span class="dp-title" id="dp-title">Detalle</span>
+      <button class="dp-close" onclick="closeDetailPanel()">✕</button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+  </div>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script>
+
+// ── SharePoint / Microsoft Graph storage layer ────────────────────────────────
+const MSAL_CONFIG = {
+  clientId: 'f47da2c5-7922-4e2f-8648-51b8486552fb',
+  tenantId: 'c408b6d8-ae0b-4d30-9056-da52e18116c4',
+  siteUrl: 'https://4housing22.sharepoint.com/sites/GerenciaComercial2',
+  sitePath: '/sites/GerenciaComercial2',
+  tenantDomain: '4housing22.sharepoint.com',
+  authority: 'https://login.microsoftonline.com/c408b6d8-ae0b-4d30-9056-da52e18116c4',
+  redirectUri: 'https://4housing22.sharepoint.com/sites/GerenciaComercial2/Documentos%20compartidos/02%20PLACE/01%20GERENCIA%20COMERCIAL/RC-01%20COTIZACIONES/0000%20CLIENTE%20-%20DESCRIPCION%20(PLANTILLAS)/03%20COSTEO/LABO/labo_crm.html',
+  redirectUri: 'https://4housing22.sharepoint.com/sites/GerenciaComercial2/Documentos%20compartidos/02%20PLACE/01%20GERENCIA%20COMERCIAL/RC-01%20COTIZACIONES/0000%20CLIENTE%20-%20DESCRIPCION%20(PLANTILLAS)/03%20COSTEO/LABO/labo_crm.html',
+  scopes: ['https://graph.microsoft.com/Files.ReadWrite.All','https://graph.microsoft.com/Sites.ReadWrite.All'],
+  dataFile: 'labo_crm_data.json',
+  dataFolder: 'LABO-CRM'
+};
+let msalInstance=null,graphToken=null,siteId=null,driveId=null;
+async function initMSAL(){
+  if(msalInstance)return true;
+  const cfg={auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}};
+  msalInstance=new msal.PublicClientApplication(cfg);
+  await msalInstance.initialize();
+  const accounts=msalInstance.getAllAccounts();
+  if(accounts.length>0){try{const r=await msalInstance.acquireTokenSilent({scopes:MSAL_CONFIG.scopes,account:accounts[0]});graphToken=r.accessToken;return true;}catch(e){}}
+  try{const r=await msalInstance.loginPopup({scopes:MSAL_CONFIG.scopes});graphToken=r.accessToken;return true;}catch(e){console.error('MSAL login failed:',e);return false;}
+}
+async function gFetch(url,opts){
+  if(!graphToken)await initMSAL();
+  const res=await fetch('https://graph.microsoft.com/v1.0'+url,{...opts,headers:{'Authorization':'Bearer '+graphToken,'Content-Type':'application/json',...(opts&&opts.headers)}});
+  return res;
+}
+async function getSiteDrive(){
+  if(siteId&&driveId)return;
+  const s=await gFetch('/sites/'+MSAL_CONFIG.tenantDomain+':'+MSAL_CONFIG.sitePath);
+  siteId=(await s.json()).id;
+  const d=await gFetch('/sites/'+siteId+'/drive');
+  driveId=(await d.json()).id;
+}
+async function readLeads(){
+  try{
+    await initMSAL();await getSiteDrive();
+    const res=await gFetch('/drives/'+driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content');
+    if(res.status===404)return[];
+    return JSON.parse(await res.text());
+  }catch(e){
+    console.warn('readLeads SP error, falling back to localStorage:',e);
+    try{const r=localStorage.getItem('labo_crm_leads');return r?JSON.parse(r):[];}catch(e2){return[];}
+  }
+}
+async function writeLeads(leads){
+  try{
+    await getSiteDrive();
+    // Ensure folder exists
+    const chk=await gFetch('/drives/'+driveId+'/root:/'+MSAL_CONFIG.dataFolder);
+    if(chk.status===404)await gFetch('/drives/'+driveId+'/root/children',{method:'POST',body:JSON.stringify({name:MSAL_CONFIG.dataFolder,folder:{},"@microsoft.graph.conflictBehavior":'rename'})});
+    await gFetch('/drives/'+driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(leads)});
+    try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
+  }catch(e){
+    console.warn('writeLeads SP error:',e);
+    try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e2){}
+  }
+}
+
+const ETAPAS=[
+  {key:'Cotizado',      cls:'e-cotizado',    color:'#1A5276'},
+  {key:'Propuesta enviada', cls:'e-propuesta', color:'#D4870A'},
+  {key:'En negociación',cls:'e-negociacion', color:'#7D3C98'},
+  {key:'Cerrado ganado',cls:'e-ganado',      color:'#1E8449'},
+  {key:'Cerrado perdido',cls:'e-perdido',    color:'#C0392B'},
+];
+const ETAPA_CLS={
+  'Cotizado':'e-cotizado','Propuesta enviada':'e-propuesta',
+  'En negociación':'e-negociacion','Cerrado ganado':'e-ganado','Cerrado perdido':'e-perdido'
+};
+
+let allLeads=[];
+let activeFilter='all';
+let sortCol='fecha';
+let sortAsc=false;
+let searchVal='';
+let currentLeadId=null;
+
+// ── Load data from localStorage ──────────────────────────────────────────────
+async function loadData(){
+  try{
+    const leads=await readLeads();
+    allLeads=leads.sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
+  }catch(e){allLeads=[];}
+  render();
+}
+
+// ── Render everything ─────────────────────────────────────────────────────────
+function render(){
+  updateCounts();
+  updateKPIs();
+  updatePipelineBar();
+  renderTable();
+}
+
+function getFiltered(){
+  let leads=[...allLeads];
+  if(activeFilter!=='all'){
+    const[field,val]=activeFilter.split(':');
+    leads=leads.filter(function(l){return l[field]===val;});
+  }
+  if(searchVal){
+    const q=searchVal.toLowerCase();
+    leads=leads.filter(function(l){
+      return (l.cliente||'').toLowerCase().includes(q)||
+             (l.vendedor||'').toLowerCase().includes(q)||
+             (l.modelo||'').toLowerCase().includes(q)||
+             (l.num||'').toLowerCase().includes(q);
+    });
+  }
+  return leads.sort(function(a,b){
+    let va=a[sortCol]||'', vb=b[sortCol]||'';
+    if(sortCol==='total'||sortCol==='cant'){va=+va;vb=+vb;}
+    if(va<vb)return sortAsc?-1:1;
+    if(va>vb)return sortAsc?1:-1;
+    return 0;
+  });
+}
+
+function updateCounts(){
+  const counts={all:allLeads.length};
+  ETAPAS.forEach(function(e){counts[e.key]=allLeads.filter(function(l){return l.etapa===e.key;}).length;});
+  counts['LABO Madera']=allLeads.filter(function(l){return l.linea==='LABO Madera';}).length;
+  counts['LABO Modular']=allLeads.filter(function(l){return l.linea==='LABO Modular';}).length;
+  document.getElementById('cnt-all').textContent=counts.all;
+  document.getElementById('cnt-cotizado').textContent=counts['Cotizado']||0;
+  document.getElementById('cnt-propuesta').textContent=counts['Propuesta enviada']||0;
+  document.getElementById('cnt-negociacion').textContent=counts['En negociación']||0;
+  document.getElementById('cnt-ganado').textContent=counts['Cerrado ganado']||0;
+  document.getElementById('cnt-perdido').textContent=counts['Cerrado perdido']||0;
+  document.getElementById('cnt-madera').textContent=counts['LABO Madera']||0;
+  document.getElementById('cnt-modular').textContent=counts['LABO Modular']||0;
+}
+
+function updateKPIs(){
+  const activas=['Cotizado','Propuesta enviada','En negociación'];
+  const pipeline=allLeads.filter(function(l){return activas.includes(l.etapa);});
+  const ganadas=allLeads.filter(function(l){return l.etapa==='Cerrado ganado';});
+  const perdidas=allLeads.filter(function(l){return l.etapa==='Cerrado perdido';});
+  const pipelineTotal=pipeline.reduce(function(s,l){return s+l.total;},0);
+  const ganadoTotal=ganadas.reduce(function(s,l){return s+l.total;},0);
+  const cerradas=ganadas.length+perdidas.length;
+  const conv=cerradas>0?Math.round(ganadas.length/cerradas*100):0;
+  const ticket=pipeline.length>0?pipelineTotal/pipeline.length:0;
+  document.getElementById('kpi-pipeline').textContent='USD '+fmt(pipelineTotal);
+  document.getElementById('kpi-pipeline-sub').textContent=pipeline.length+' cotizaciones activas';
+  document.getElementById('kpi-ganado').textContent='USD '+fmt(ganadoTotal);
+  document.getElementById('kpi-ganado-sub').textContent=ganadas.length+' operaciones';
+  document.getElementById('kpi-conv').textContent=conv+'%';
+  document.getElementById('kpi-conv-sub').textContent='ganado / total cerrado ('+cerradas+')';
+  document.getElementById('kpi-ticket').textContent='USD '+fmt(ticket);
+  document.getElementById('kpi-ticket-sub').textContent='sobre '+pipeline.length+' leads activos';
+}
+
+function updatePipelineBar(){
+  const bar=document.getElementById('pipeline-bar');
+  const legend=document.getElementById('pipeline-legend');
+  const total=allLeads.length||1;
+  bar.innerHTML=ETAPAS.map(function(e){
+    const n=allLeads.filter(function(l){return l.etapa===e.key;}).length;
+    const pct=Math.max(n/total*100,0.5);
+    return '<div class="pb-seg" style="flex:'+pct+';background:'+e.color+'" title="'+e.key+': '+n+'"></div>';
+  }).join('');
+  legend.innerHTML=ETAPAS.map(function(e){
+    const n=allLeads.filter(function(l){return l.etapa===e.key;}).length;
+    return '<div class="pl-item"><div class="pl-dot" style="background:'+e.color+'"></div>'+e.key+' ('+n+')</div>';
+  }).join('');
+}
+
+function renderTable(){
+  const leads=getFiltered();
+  const container=document.getElementById('table-container');
+  if(leads.length===0){
+    container.innerHTML='<div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Sin cotizaciones'+(activeFilter!=='all'?' para este filtro':''+'.</div></div>');
+    return;
+  }
+  const rows=leads.map(function(l){
+    const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+    const edot=ETAPAS.find(function(e){return e.key===l.etapa;})||ETAPAS[0];
+    const lbCls=l.linea==='LABO Madera'?'lb-madera':'lb-modular';
+    const fdate=l.fecha?new Date(l.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    const diasSinAct=diasDesde(l);
+    const alertClass=diasSinAct>14&&l.etapa!=='Cerrado ganado'&&l.etapa!=='Cerrado perdido'?' style="color:#C0392B;font-weight:600"':'';
+    return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
+      '<td><div class="td-cliente">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.contacto||'')+'</div></td>'+
+      '<td><span class="linea-badge '+lbCls+'">'+esc(l.linea||'')+'</span><br><span class="td-muted" style="font-size:11px">Modelo '+esc(l.modelo||'')+'</span></td>'+
+      '<td class="td-total">USD '+fmt(l.total)+'</td>'+
+      '<td class="td-mono" style="font-size:11px">'+fdate+'</td>'+
+      '<td class="td-mono"'+alertClass+'>'+diasSinAct+'d</td>'+
+      '<td><div class="etapa-dropdown" id="dd_'+l.id+'" onclick="event.stopPropagation()">'+
+        '<button class="etapa '+cls+'" onclick="toggleDD(\''+l.id+'\')">'+
+          '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
+        '</button>'+
+        '<div class="etapa-menu">'+
+          ETAPAS.map(function(e){
+            const ec=ETAPA_CLS[e.key];
+            return '<button class="'+ec+'" onclick="changeEtapa(\''+l.id+'\',\''+e.key+'\')">'+
+              '<span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';
+          }).join('')+
+        '</div>'+
+      '</div></td>'+
+      '<td class="td-mono td-muted" style="font-size:11px">'+esc(l.vendedor||'—')+'</td>'+
+    '</tr>';
+  }).join('');
+
+  container.innerHTML='<table>'+
+    '<thead><tr>'+
+      '<th onclick="setSort(\'cliente\')">Cliente</th>'+
+      '<th onclick="setSort(\'linea\')">Línea / Modelo</th>'+
+      '<th onclick="setSort(\'total\')">Total</th>'+
+      '<th onclick="setSort(\'fecha\')">Fecha</th>'+
+      '<th title="Días sin actividad">Sin act.</th>'+
+      '<th>Etapa</th>'+
+      '<th onclick="setSort(\'vendedor\')">Vendedor</th>'+
+    '</tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+
+  '</table>';
+}
+
+// ── Detail panel ─────────────────────────────────────────────────────────────
+function openDetail(id){
+  const l=allLeads.find(function(x){return x.id===id;});
+  if(!l)return;
+  currentLeadId=id;
+  document.getElementById('dp-title').textContent=l.cliente||'Detalle del lead';
+  const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+  const edot=ETAPAS.find(function(e){return e.key===l.etapa;})||ETAPAS[0];
+  const actHTML=(l.actividad||[]).map(function(a){
+    return '<div class="act-item"><div class="act-fecha">'+a.fecha+'</div>'+esc(a.texto)+'</div>';
+  }).reverse().join('');
+  document.getElementById('dp-body').innerHTML=
+    '<div class="dp-total">'+
+      '<span class="dp-total-label">Total cotizado</span>'+
+      '<span class="dp-total-value">USD '+fmt(l.total)+'</span>'+
+    '</div>'+
+    '<div class="dp-section">'+
+      '<div class="dp-section-title">Etapa actual</div>'+
+      '<div class="etapa-dropdown" id="dp_dd_'+l.id+'">'+
+        '<button class="etapa '+cls+'" style="font-size:10px;padding:5px 12px" onclick="toggleDD(\'dp_dd_'+l.id+'\',true)">'+
+          '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
+        '</button>'+
+        '<div class="etapa-menu">'+
+          ETAPAS.map(function(e){
+            const ec=ETAPA_CLS[e.key];
+            return '<button class="'+ec+'" onclick="changeEtapa(\''+l.id+'\',\''+e.key+'\',true)">'+
+              '<span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';
+          }).join('')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="dp-section">'+
+      '<div class="dp-section-title">Datos del lead</div>'+
+      '<div class="dp-grid">'+
+        field('Oferta N°',l.num)+
+        field('Fecha',l.fecha?new Date(l.fecha).toLocaleDateString('es-AR'):'-')+
+        field('Línea',l.linea)+
+        field('Modelo',l.modelo+' ('+l.sup+' m²)')+
+        field('Cantidad',l.cant+' ud.')+
+        field('Vendedor',l.vendedor)+
+        field('Lugar',l.lugar)+
+        field('Cond. pago',l.pago)+
+        field('Plazo',l.plazo)+
+      '</div>'+
+    '</div>'+
+    '<div class="dp-section">'+
+      '<div class="dp-section-title">Contacto</div>'+
+      '<div class="dp-grid">'+
+        field('Contacto',l.contacto)+
+        field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'-')+'</a>')+
+        field('Teléfono',l.tel)+
+      '</div>'+
+    '</div>'+
+    (l.notas?'<div class="dp-section"><div class="dp-section-title">Notas de cotización</div><div style="font-size:13px;line-height:1.6;color:#444">'+esc(l.notas)+'</div></div>':'')+
+    '<div class="dp-section">'+
+      '<div class="dp-section-title">Actividad y seguimiento</div>'+
+      '<textarea class="nota-input" id="nota-input" placeholder="Registrá una acción, llamado, reunión..."></textarea>'+
+      '<button class="btn-nota" onclick="addNota()">+ Registrar actividad</button>'+
+      '<div class="actividad-list" id="actividad-list">'+actHTML+'</div>'+
+    '</div>';
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function field(label,value){
+  return '<div class="dp-field"><label>'+label+'</label><span>'+value+'</span></div>';
+}
+
+function closeDetailPanel(){
+  document.getElementById('detailOverlay').classList.remove('open');
+  currentLeadId=null;
+}
+function closeDetail(e){
+  if(e.target===document.getElementById('detailOverlay')) closeDetailPanel();
+}
+
+// ── Etapa change ──────────────────────────────────────────────────────────────
+function changeEtapa(id,etapa,fromDetail){
+  const l=allLeads.find(function(x){return x.id===id;});
+  if(!l)return;
+  l.etapa=etapa;
+  // Log activity
+  if(!l.actividad)l.actividad=[];
+  l.actividad.push({fecha:new Date().toLocaleDateString('es-AR'),texto:'Etapa actualizada: '+etapa});
+  saveAllLeads();
+  // Close dropdowns
+  document.querySelectorAll('.etapa-dropdown.open').forEach(function(d){d.classList.remove('open');});
+  render();
+  if(fromDetail&&currentLeadId) openDetail(currentLeadId);
+}
+
+function toggleDD(id,isSelector){
+  const el=document.getElementById(id)||document.querySelector('#'+id);
+  if(!el)return;
+  const wasOpen=el.classList.contains('open');
+  document.querySelectorAll('.etapa-dropdown.open').forEach(function(d){d.classList.remove('open');});
+  if(!wasOpen) el.classList.add('open');
+}
+
+// ── Actividad ─────────────────────────────────────────────────────────────────
+function addNota(){
+  if(!currentLeadId)return;
+  const inp=document.getElementById('nota-input');
+  const texto=inp.value.trim();
+  if(!texto)return;
+  const l=allLeads.find(function(x){return x.id===currentLeadId;});
+  if(!l)return;
+  if(!l.actividad)l.actividad=[];
+  l.actividad.push({fecha:new Date().toLocaleDateString('es-AR'),texto:texto});
+  inp.value='';
+  saveAllLeads();
+  // Refresh activity list in panel
+  const list=document.getElementById('actividad-list');
+  if(list){
+    list.innerHTML=l.actividad.map(function(a){
+      return '<div class="act-item"><div class="act-fecha">'+a.fecha+'</div>'+esc(a.texto)+'</div>';
+    }).reverse().join('');
+  }
+}
+
+// ── Filters & sort ────────────────────────────────────────────────────────────
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.s-item').forEach(function(x){x.classList.remove('active');});
+  if(el)el.classList.add('active');
+  renderTable();
+}
+function filterSearch(v){searchVal=v;renderTable();}
+function setSort(col){
+  if(sortCol===col) sortAsc=!sortAsc;
+  else{sortCol=col;sortAsc=true;}
+  renderTable();
+}
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const cols=['num','fecha','cliente','contacto','email','tel','vendedor','linea','modelo','sup','cant','total','etapa','lugar','pago','plazo'];
+  const header=cols.join(',');
+  const rows=allLeads.map(function(l){
+    return cols.map(function(c){
+      const v=String(l[c]||'').replace(/"/g,'""');
+      return '"'+v+'"';
+    }).join(',');
+  });
+  const csv=header+'\n'+rows.join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='LABO_CRM_'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ── Persist all leads ────────────────────────────────────────────────────────
+function saveAllLeads(){
+  writeLeads(allLeads).catch(function(e){console.warn('saveAllLeads:',e);});
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function diasDesde(l){
+  const activas=['Cotizado','Propuesta enviada','En negociación'];
+  if(!activas.includes(l.etapa))return 0;
+  const ultAct=l.actividad&&l.actividad.length>0?l.actividad[l.actividad.length-1].fecha:null;
+  const base=ultAct?new Date(ultAct.split('/').reverse().join('-')):new Date(l.fecha);
+  return Math.floor((new Date()-base)/(1000*60*60*24));
+}
+function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Close dropdowns on outside click
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.etapa-dropdown')){
+    document.querySelectorAll('.etapa-dropdown.open').forEach(function(d){d.classList.remove('open');});
+  }
+});
+
+// Init
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',loadData);
+}else{
+  loadData();
+}
+// Auto-refresh every 30s
+setInterval(loadData,30000); // auto-refresh
+</script>
+</body>
+</html>

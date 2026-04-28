@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LABO — Cotizador Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0A0A0A;
+    --white: #F5F4F0;
+    --off-white: #ECEAE3;
+    --mid: #C8C5BC;
+    --muted: #8A877F;
+    --border: #D4D1C8;
+    --accent: #1A1A1A;
+    --red: #B03020;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--white);
+    color: var(--black);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--black);
+    color: var(--white);
+    padding: 20px 40px;
+    display:-webkit-box;display:-webkit-flex;display:flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo-mark {
+    display:-webkit-box;display:-webkit-flex;display:flex;
+    gap: 10px;row-gap: 10px;column-gap: 10px;
+    align-items: center;
+  }
+
+  /* LABO logo as 4 geometric blocks */
+  .logo-svg { height: 28px; }
+
+  .header-right {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display:-webkit-box;display:-webkit-flex;display:flex;
+    align-items: center;
+    gap: 24px;row-gap: 24px;column-gap: 24px;
+  }
+
+  .step-indicator {
+    color: var(--white);
+    letter-spacing: 2px;
+  }
+
+  /* ── NAV STEPS ── */
+  .nav {
+    background: var(--black);
+    border-top: 1px solid #1E1E1E;
+    display:-webkit-box;display:-webkit-flex;display:flex;
+  }
+
+  .nbtn {
+    flex: 1;
+    padding: 13px 20px;
+    border: none;
+    background: transparent;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #555;
+    cursor: pointer;
+    border-right: 1px solid #1E1E1E;
+    display:-webkit-box;display:-webkit-flex;display:flex;
+    align-items: center;
+    gap: 10px;row-gap: 10px;column-gap: 10px;
+    transition: all .2s;-webkit-transition: all .2s;
+    position: relative;
+  }
+  .nbtn:last-child { border-right: none; }
+  .nbtn.active { color: var(--white); }
+  .nbtn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--white);
+  }
+  .nbtn.done { color: var(--muted); }
+  .nbtn.settings { font-size: 10px; }
+  .nbtn.settings.active { color: var(--white); }
+  .nnum {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    font-size: 9px;
+    display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: #555;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .nbtn.active .nnum { border-color: var(--white); color: var(--white); }
+  .nbtn.done .nnum { border-color: var(--muted); color: var(--muted); }
+
+  /* ── CONTAINER ── */
+  .container { max-width: 1060px; margin: 0 auto; padding: 36px 24px; }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; -webkit-animation: fadeIn .2s ease; animation: fadeIn .2s ease; }
+  @-webkit-keyframes fadeIn { from { opacity: 0; -webkit-transform: translateY(4px); transform: translateY(4px); } to { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; -webkit-transform: translateY(4px); transform: translateY(4px); } to { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); } }
+
+  /* ── CARD ── */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+
+  .ctitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── MODEL GRID ── */
+  .mgrid {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    gap: 8px;
+    row-gap: 8px;
+    column-gap: 8px;
+  }
+  .mgrid > .mcard {
+    -webkit-flex: 1 1 120px;
+    flex: 1 1 120px;
+    max-width: 160px;
+  }
+
+  .mcard {
+    border: 1px solid var(--border);
+    padding: 16px 12px;
+    cursor: pointer;
+    transition: all .15s;-webkit-transition: all .15s;
+    text-align: center;
+    background: var(--white);
+    position: relative;
+  }
+  .mcard:hover { border-color: var(--black); background: white; }
+  .mcard.selected { border-color: var(--black); background: var(--black); color: var(--white); }
+
+  .mname {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+  }
+  .mcard.selected .mname { color: var(--white); }
+  .msup { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  .mcard.selected .msup { color: var(--mid); }
+  .mprice { font-size: 11px; font-weight: 500; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; }
+  .mcard.selected .mprice { color: var(--white); }
+  .cbadge {
+    position: absolute; top: 6px; right: 6px;
+    width: 16px; height: 16px;
+    background: var(--white);
+    color: var(--black);
+    font-size: 9px;
+    display: none;
+    align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .mcard.selected .cbadge { display:-webkit-box;display:-webkit-flex;display:flex; }
+
+  /* ── FORM ── */
+  .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px;row-gap: 16px;column-gap: 16px; margin-bottom: 16px; }
+  .frow3 { grid-template-columns: 1fr 1fr 1fr; }
+  .fg { display:-webkit-box;display:-webkit-flex;display:flex; flex-direction: column; gap: 5px;row-gap: 5px;column-gap: 5px; }
+  .fg label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .fg input, .fg select, .fg textarea {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    color: var(--black);
+    outline: none;
+    transition: border .15s;-webkit-transition: border .15s;
+    border-radius: 0;
+  }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--black); }
+  .fg textarea { resize: vertical; min-height: 72px; }
+
+  /* ── OPTIONS ── */
+  .olist { display:-webkit-box;display:-webkit-flex;display:flex; flex-direction: column; gap: 6px;row-gap: 6px;column-gap: 6px; }
+
+  .orow {
+    display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    gap: 12px;row-gap: 12px;column-gap: 12px;
+    transition: all .15s;-webkit-transition: all .15s;
+  }
+  .orow.on { border-color: var(--black); background: white; }
+  .orow.na { opacity: .3; pointer-events: none; }
+  .oleft { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 10px;row-gap: 10px;column-gap: 10px; flex: 1; }
+  .oname { font-size: 12px; font-weight: 400; }
+  .oprice {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 110px;
+    text-align: right;
+    color: var(--black);
+  }
+
+  .toggle-btn {
+    display:-webkit-box;display:-webkit-flex;display:flex;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .toggle-btn button {
+    padding: 4px 10px;
+    border: none;
+    background: white;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .12s;-webkit-transition: all .12s;
+    color: var(--muted);
+  }
+  .toggle-btn button.active-yes { background: var(--black); color: var(--white); }
+  .toggle-btn button.active-no { background: var(--off-white); color: var(--muted); }
+
+  /* Logistics row */
+  .lrow {
+    display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px;
+    border: 1px solid var(--black);
+    background: white;
+    gap: 12px;row-gap: 12px;column-gap: 12px; flex-wrap: wrap;
+  }
+  .lleft { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 10px;row-gap: 10px;column-gap: 10px; flex: 1; flex-wrap: wrap; }
+  .lname { font-size: 12px; font-weight: 500; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+  .kmwrap { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 6px;row-gap: 6px;column-gap: 6px; }
+  .kmwrap label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .kmwrap input { width: 90px; padding: 5px 8px; border: 1px solid var(--border); background: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; outline: none; transition: border .15s;-webkit-transition: border .15s; border-radius: 0; }
+  .kmwrap input:focus { border-color: var(--black); }
+  .kmhint { font-size: 11px; color: var(--muted); }
+
+  /* Quantity row */
+  .crow {
+    display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 12px;row-gap: 12px;column-gap: 12px;
+    margin-top: 16px; padding: 14px 16px;
+    background: var(--off-white);
+    flex-wrap: wrap;
+  }
+  .crow label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .crow input { width: 70px; padding: 6px 10px; border: 1px solid var(--border); font-size: 13px; font-family: 'IBM Plex Mono', monospace; outline: none; border-radius: 0; background: white; }
+  .ctotal { font-weight: 600; font-size: 12px; margin-left: auto; font-family: 'IBM Plex Mono', monospace; }
+
+  /* Summary table */
+  .stbl { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  .stbl th { text-align: left; padding: 8px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--white); background: var(--black); }
+  .stbl th.r { text-align: right; }
+  .stbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
+  .stbl tr:last-child td { border-bottom: none; }
+  .stbl .trow td { font-weight: 600; background: var(--off-white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .pcol { text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+  .inccol { text-align: right; min-width: 110px; }
+  .inc-wrap { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 6px;row-gap: 6px;column-gap: 6px; justify-content: flex-end; }
+  .inc-bar { width: 50px; height: 4px; background: var(--border); flex-shrink: 0; }
+  .inc-fill { height: 100%; transition: width .3s;-webkit-transition: width .3s; }
+  .inc-fill.base { background: var(--black); }
+  .inc-fill.opt { background: var(--muted); }
+  .inc-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); min-width: 38px; text-align: right; }
+
+  /* Total box */
+  .tbox {
+    background: var(--black);
+    color: var(--white);
+    padding: 22px 28px;
+    display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
+    margin-top: 20px; flex-wrap: wrap; gap: 16px;row-gap: 16px;column-gap: 16px;
+  }
+  .tbox .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  .tbox .amt { font-size: 2rem; font-weight: 300; letter-spacing: -1px; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+  .tbox .nt { font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* Buttons */
+  .btn {
+    padding: 11px 24px;
+    border: none;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all .15s;-webkit-transition: all .15s;
+    display: inline-flex; align-items: center; gap: 8px;row-gap: 8px;column-gap: 8px;
+    border-radius: 0;
+  }
+  .bp { background: var(--black); color: var(--white); }
+  .bp:hover { background: #333; }
+  .bo { background: transparent; color: var(--black); border: 1px solid var(--border); }
+  .bo:hover { border-color: var(--black); }
+  .ba { background: var(--red); color: white; }
+  .ba:hover { background: #8B2010; }
+
+  .nrow { display:-webkit-box;display:-webkit-flex;display:flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+
+  /* ── PREVIEW ── */
+  .pvhdr {
+    background: var(--black);
+    color: var(--white);
+    padding: 18px 28px;
+    display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
+  }
+  .pvhdr-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  .pvcnt { padding: 36px 40px; background: white; border: 1px solid var(--border); border-top: none; }
+
+  /* Preview doc styles */
+  .oempresa { margin-bottom: 28px; display:-webkit-box;display:-webkit-flex;display:flex; align-items: flex-start; justify-content: space-between; }
+  .enombre { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: 4px; color: var(--black); }
+  .esub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .odiv { height: 1px; background: var(--black); margin: 20px 0; }
+  .ometa { display: grid; grid-template-columns: 1fr 1fr; gap: 12px;row-gap: 12px;column-gap: 12px; margin-bottom: 24px; padding: 18px 20px; background: var(--off-white); }
+  .ometa .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
+  .ometa .val { font-size: 12px; font-weight: 500; margin-top: 2px; }
+  .ostitle { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; margin-top: 20px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .oitems { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+  .oitems th { background: var(--black); color: var(--white); padding: 8px 12px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
+  .oitems td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .oitems .otrow td { background: var(--black); color: var(--white); font-weight: 600; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .oitems td:last-child, .oitems th:last-child { text-align: right; }
+  .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px;row-gap: 4px;column-gap: 4px; margin-bottom: 20px; }
+  .iitem { display:-webkit-box;display:-webkit-flex;display:flex; gap: 7px;row-gap: 7px;column-gap: 7px; font-size: 11px; align-items: flex-start; }
+  .iitem .dot { width: 5px; height: 5px; background: var(--black); flex-shrink: 0; margin-top: 4px; }
+  .nbox { background: var(--off-white); border-left: 3px solid var(--black); padding: 12px 16px; font-size: 12px; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; }
+  .oftr { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--muted); padding-top: 16px; border-top: 1px solid var(--border); }
+
+  /* ── COST EDITOR ── */
+  .cost-note { font-size: 12px; color: var(--muted); line-height: 1.65; padding: 12px 16px; background: var(--off-white); border-left: 3px solid var(--black); margin-bottom: 20px; }
+  .cost-note code { background: var(--border); padding: 1px 5px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+  .cost-section { margin-bottom: 24px; }
+  .cost-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .cost-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .cost-table th { background: var(--black); color: var(--white); padding: 7px 10px; text-align: right; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; }
+  .cost-table th:first-child { text-align: left; min-width: 180px; }
+  .cost-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .cost-table td:first-child { font-weight: 500; }
+  .cost-table td:not(:first-child) { text-align: right; }
+  .cost-table tr:nth-child(even) { background: var(--off-white); }
+  .cost-table input[type=number] { width: 88px; padding: 4px 7px; border: 1px solid var(--border); font-size: 11px; text-align: right; font-family: 'IBM Plex Mono', monospace; outline: none; border-radius: 0; }
+  .cost-table input:focus { border-color: var(--black); }
+  .cost-table input:disabled { background: #f0f0f0; opacity: .35; cursor: not-allowed; }
+  .log-formula { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); padding: 6px 10px; background: var(--off-white); margin-top: 6px; }
+  .success-msg { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--black); display: none; margin-top: 12px; padding: 10px 14px; background: var(--off-white); border-left: 3px solid var(--black); }
+
+  @media(max-width:700px) {
+    /* Layout base */
+    .container { padding: 16px 12px; }
+    .header { padding: 14px 16px; }
+    .logo-svg { height: 22px; }
+    .header-right { font-size: 9px; gap: 12px;row-gap: 12px;column-gap: 12px; }
+
+    /* Nav */
+    .nav { flex-wrap: wrap; }
+    .nbtn { font-size: 9px; padding: 10px 10px; flex: 1 1 45%; }
+
+    /* Cards */
+    .card { padding: 18px 16px; }
+
+    /* Modelo grid: 3 columnas en mobile */
+    .mgrid { -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px; } .mgrid > .mcard { -webkit-flex: 1 1 80px; flex: 1 1 80px; max-width: 33%; } .model-group-label { font-size: 8px; padding: 4px 7px; }
+    .mcard { padding: 12px 8px; }
+    .mname { font-size: 1.1rem; }
+    .msup  { font-size: 10px; }
+    .mprice { font-size: 10px; }
+
+    /* Opcionales: sin wrap forzado, todo en una fila */
+    .orow { flex-wrap: nowrap; gap: 6px;row-gap: 6px;column-gap: 6px; padding: 9px 10px; }
+    .oleft { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .oname { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .oprice { font-size: 11px; min-width: 72px; flex-shrink: 0; }
+    .toggle-btn button { padding: 5px 9px; font-size: 12px; }
+
+    /* Logística */
+    .lrow { padding: 10px 12px; }
+    .lleft { flex-wrap: wrap; gap: 8px;row-gap: 8px;column-gap: 8px; }
+    .kmwrap input { width: 80px; }
+
+    /* Tabla resumen */
+    .stbl th, .stbl td { padding: 7px 8px; font-size: 11px; }
+    .stbl th:nth-child(3), .stbl td:nth-child(3) { display: none; } /* ocultar subtotal en mobile si cant=1 */
+    .stbl th:nth-child(4), .stbl td:nth-child(4) { display: none; } /* ocultar USD/m² en mobile */
+    .inc-bar { width: 32px; }
+
+    /* Total box */
+    .tbox { flex-direction: column; gap: 10px;row-gap: 10px;column-gap: 10px; padding: 16px 18px; }
+    .tbox .amt { font-size: 1.6rem; }
+
+    /* Formularios */
+    .frow, .frow3 { grid-template-columns: 1fr; }
+
+    /* Preview */
+    .ometa, .igrid { grid-template-columns: 1fr; }
+    .pvcnt { padding: 20px 16px; }
+    .pvhdr { padding: 14px 16px; flex-wrap: wrap; gap: 8px;row-gap: 8px;column-gap: 8px; }
+
+    /* Botones nav */
+    .nrow { flex-direction: column; gap: 10px;row-gap: 10px;column-gap: 10px; }
+    .nrow button { width: 100%; justify-content: center; }
+    input, select, textarea { font-size: 16px !important; }
+    .btn { font-size: 10px; padding: 12px 18px; }
+  }
+
+  @media(max-width:700px) {
+
+    /* iOS input zoom fix — font-size mínimo 16px */
+    input, select, textarea { font-size: 16px !important; }
+
+  }
+  @media(max-width:380px) {
+    .mgrid > .mcard { -webkit-flex: 1 1 120px; flex: 1 1 120px; max-width: 50%; }
+    .nbtn { flex: 1 1 100%; border-right: none; border-bottom: 1px solid #1E1E1E; }
+  }
+
+  /* ── MODEL GROUPS ── */
+  .model-group { margin-bottom: 4px; }
+  .model-group-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 5px 8px;
+    margin-bottom: 8px;
+    display: inline-block;
+    font-weight: 500;
+  }
+  .madera-label  { background: var(--black); color: var(--white); }
+  .modular-label { background: var(--off-white); color: var(--black); border: 1px solid var(--border); }
+
+  .mcard-madera.selected { border-color: var(--black); background: var(--black); color: var(--white); }
+  .mcard-modular { background: var(--off-white); }
+  .mcard-modular.selected { border-color: var(--black); background: var(--black); color: var(--white); }
+  .mcard-modular .msup { color: var(--muted); }
+  .mcard-modular.selected .msup { color: #aaa; }
+  .mcard-modular.selected .mprice { color: var(--white); }
+  /* ── MODAL CONTRASEÑA ── */
+  .pass-overlay {
+    display: none;
+    position: fixed;
+    top:0;right:0;bottom:0;left:0;
+    background: rgba(0,0,0,.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .pass-overlay.show { display:-webkit-box;display:-webkit-flex;display:flex; }
+  .pass-box {
+    background: var(--white);
+    padding: 36px 40px;
+    width: 320px;
+    border: 1px solid var(--border);
+  }
+  .pass-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .pass-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 4px;
+    outline: none;
+    border-radius: 0;
+    margin-bottom: 12px;
+  }
+  .pass-input:focus { border-color: var(--black); }
+  .pass-input.error { border-color: var(--red); }
+  .pass-error {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .pass-error.show { display: block; }
+  .pass-actions { display:-webkit-box;display:-webkit-flex;display:flex; gap: 8px;row-gap: 8px;column-gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Modal contraseña -->
+<div class="pass-overlay" id="passOverlay" onclick="closePass(event)">
+  <div class="pass-box">
+    <div class="pass-title">⚙ Actualizar Costos</div>
+    <input class="pass-input" type="password" id="passInput" placeholder="Contraseña"
+           onkeydown="if(event.key==='Enter')checkPass(); if(event.key==='Escape')closePass();">
+    <div class="pass-error" id="passError">Contraseña incorrecta</div>
+    <div class="pass-actions">
+      <button class="btn bp" onclick="checkPass()" style="flex:1">Ingresar</button>
+      <button class="btn bo" onclick="closePass()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo-mark">
+    <!-- LABO wordmark — u=5px, gap=12px, viewBox exacto al contenido -->
+    <svg class="logo-svg" viewBox="4 0 139 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- L (x:4–26) -->
+      <rect x="4"   y="0"  width="5" height="28" fill="#F5F4F0"/>
+      <rect x="4"   y="23" width="22" height="5"  fill="#F5F4F0"/>
+      <!-- A (x:38–64) -->
+      <rect x="38"  y="0"  width="5"  height="28" fill="#F5F4F0"/>
+      <rect x="59"  y="0"  width="5"  height="28" fill="#F5F4F0"/>
+      <rect x="38"  y="0"  width="26" height="5"  fill="#F5F4F0"/>
+      <rect x="38"  y="12" width="26" height="5"  fill="#F5F4F0"/>
+      <!-- B (x:76–101) -->
+      <rect x="76"  y="0"  width="5"  height="28" fill="#F5F4F0"/>
+      <rect x="76"  y="0"  width="25" height="5"  fill="#F5F4F0"/>
+      <rect x="76"  y="12" width="22" height="5"  fill="#F5F4F0"/>
+      <rect x="76"  y="23" width="25" height="5"  fill="#F5F4F0"/>
+      <rect x="96"  y="0"  width="5"  height="17" fill="#F5F4F0"/>
+      <rect x="96"  y="11" width="5"  height="17" fill="#F5F4F0"/>
+      <!-- O (x:113–139) -->
+      <rect x="113" y="0"  width="5"  height="28" fill="#F5F4F0"/>
+      <rect x="134" y="0"  width="5"  height="28" fill="#F5F4F0"/>
+      <rect x="113" y="0"  width="26" height="5"  fill="#F5F4F0"/>
+      <rect x="113" y="23" width="26" height="5"  fill="#F5F4F0"/>
+    </svg>
+  </div>
+  <div class="header-right">
+    <span>Gerencia Comercial</span>
+    <span class="step-indicator" id="stepLabel">PASO 1 / 3</span>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nbtn active" onclick="goStep(1)" id="sb1"><span class="nnum">1</span>Modelo y Opcionales</button>
+  <button class="nbtn" onclick="goStep(2)" id="sb2"><span class="nnum">2</span>Datos del Cliente</button>
+  <button class="nbtn" onclick="goStep(3)" id="sb3"><span class="nnum">3</span>Vista Previa y PDF</button>
+  <button class="nbtn settings" onclick="askPass()" id="sb4"><span class="nnum" style="font-size:10px">⚙</span>Actualizar Costos</button>
+</div>
+
+<div class="container">
+
+  <!-- PANEL 1: Modelo -->
+  <div class="panel active" id="panel1">
+    <div class="card">
+      <div class="ctitle">Seleccioná el modelo</div>
+      <div class="model-group">
+        <div class="model-group-label madera-label">LABO Madera</div>
+        <div class="mgrid" id="mgrid-mad"></div>
+      </div>
+      <div class="model-group" style="margin-top:20px">
+        <div class="model-group-label modular-label">LABO Modular</div>
+        <div class="mgrid" id="mgrid-mod"></div>
+      </div>
+      <div class="crow">
+        <label for="cant">Unidades</label>
+        <input type="number" id="cant" value="1" min="1" max="9999" oninput="upd()">
+        <span class="ctotal" id="ctotal"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Opcionales y logística</div>
+      <div class="olist" id="olist"></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Resumen de precio</div>
+      <table class="stbl">
+        <thead><tr><th>Concepto</th><th class="r">Precio unit. (USD)</th><th class="r subtotal-col">Subtotal (USD)</th><th class="r">USD/m²</th><th class="r">% Inc.</th></tr></thead>
+        <tbody id="sbody"></tbody>
+      </table>
+      <div class="tbox">
+        <div>
+          <div class="lbl">Total oferta</div>
+          <div class="amt" id="tdisplay">USD 0</div>
+          <div class="nt">Valores sin IVA</div>
+        </div>
+        <div style="text-align:right">
+          <div class="lbl">Precio / m²</div>
+          <div style="font-size:1.2rem;font-weight:400;font-family:'IBM Plex Mono',monospace;margin-top:4px" id="pm2display">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="nrow">
+      <div></div>
+      <button class="btn bp" onclick="goStep(2)">Siguiente → Datos del cliente</button>
+    </div>
+  </div>
+
+  <!-- PANEL 2: Cliente -->
+  <div class="panel" id="panel2">
+    <div class="card">
+      <div class="ctitle">Datos del cliente</div>
+      <div class="frow">
+        <div class="fg"><label>Nombre / Razón Social</label><input type="text" id="cNombre" placeholder="Constructora XYZ S.A."></div>
+        <div class="fg"><label>Contacto</label><input type="text" id="cContacto" placeholder="Nombre del interlocutor"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Email</label><input type="email" id="cEmail" placeholder="contacto@empresa.com"></div>
+        <div class="fg"><label>Teléfono</label><input type="text" id="cTel" placeholder="+54 11 ···"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Datos de la oferta</div>
+      <div class="frow frow3">
+        <div class="fg"><label>N° de oferta</label><input type="text" id="oNum" placeholder="OC-2026-001"></div>
+        <div class="fg"><label>Fecha</label><input type="date" id="oFecha"></div>
+        <div class="fg"><label>Validez (días)</label><input type="number" id="oValidez" value="30" min="1"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Vendedor / Comercial</label><input type="text" id="oVendedor" placeholder="Nombre del responsable"></div>
+        <div class="fg"><label>Lugar de entrega / Proyecto</label><input type="text" id="oLugar" placeholder="Ciudad, provincia"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Condiciones y notas</div>
+      <div class="frow">
+        <div class="fg"><label>Condición de pago</label>
+          <select id="oPago">
+            <option>50% adelanto / 50% contra entrega</option>
+            <option>30% señal / 40% avance / 30% entrega</option>
+            <option>Contado</option>
+            <option>A convenir</option>
+          </select>
+        </div>
+        <div class="fg"><label>Plazo de entrega estimado</label><input type="text" id="oPlazo" placeholder="Ej: 90 días hábiles"></div>
+      </div>
+      <div class="fg"><label>Notas adicionales</label><textarea id="oNotas" placeholder="Aclaraciones, condiciones especiales..."></textarea></div>
+    </div>
+    <div class="nrow">
+      <button class="btn bo" onclick="goStep(1)">← Volver</button>
+      <button class="btn bp" onclick="goStep(3);buildPreview()">Generar vista previa →</button>
+    </div>
+  </div>
+
+  <!-- PANEL 3: Preview -->
+  <div class="panel" id="panel3">
+    <div class="pvhdr">
+      <span class="pvhdr-title">Vista previa — Oferta Comercial</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn bo" onclick="goStep(2)" style="color:var(--white);border-color:#333;font-size:9px;padding:8px 14px">← Editar</button>
+        <button class="btn ba" onclick="generatePDF()" style="padding:10px 20px">↓ Descargar PDF</button>
+      </div>
+    </div>
+    <div class="pvcnt" id="pvw"></div>
+  </div>
+
+  <!-- PANEL 4: Costos -->
+  <div class="panel" id="panel4">
+    <div class="card">
+      <div class="ctitle">Actualización de Costos</div>
+
+      <!-- Google Sheets sync block -->
+      <div class="cost-note" style="margin-bottom:16px">
+        <strong>Sincronización automática vía Google Sheets</strong><br>
+        Publicá tu hoja de costos como CSV (<em>Archivo → Compartir → Publicar en la web → CSV</em>) y pegá la URL aquí. El cotizador leerá los valores cada vez que hagas clic en "Sincronizar".
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px">
+        <div class="fg" style="flex:1;min-width:240px">
+          <label>URL pública de Google Sheets (CSV)</label>
+          <input type="url" id="sheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" style="width:100%;padding:9px 12px;border:1px solid var(--border);background:var(--white);font-size:12px;font-family:'IBM Plex Mono',monospace;outline:none;border-radius:0">
+        </div>
+        <button class="btn bp" onclick="syncSheets()" style="white-space:nowrap">↻ Sincronizar</button>
+      </div>
+      <div class="success-msg" id="sheetsMsg" style="display:none"></div>
+
+      <div class="cost-note">
+        Todos los valores también pueden editarse manualmente. Para que sean <strong>permanentes sin Google Sheets</strong>, copiá los nuevos valores al objeto <code>COSTOS</code> en el código fuente del .html.<br><br>
+        <strong>Logística:</strong> <code>tarifa_km × km × (km ≥ 101 ? 0.7 : 1) × 1.4</code> &nbsp;·&nbsp; <strong>Montaje:</strong> precio fijo por tramos × 1.4
+      </div>
+      <div id="costEditorWrap"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">
+        <button class="btn bp" onclick="aplicarCostos()">✓ Aplicar cambios</button>
+        <button class="btn bo" onclick="resetCostos()">↺ Restaurar valores originales</button>
+        <button class="btn bo" onclick="goStep(1)">← Volver al cotizador</button>
+      </div>
+      <div class="success-msg" id="costoMsg">✓ Costos actualizados. El cotizador ya refleja los nuevos valores.</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+const MARKUP=1.4;
+const COSTOS={
+  MAD_S:{sup:50,pb:49360.75,op:{"Platea de fundación + Granítico":9833.6,"Termomecánica por AA Split":2240,"Piso Radiante":4704,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":0,"Deck":0,"Grúa":2912}},
+  MAD_M:{sup:67,pb:64658.69,op:{"Platea de fundación + Granítico":14918.4,"Termomecánica por AA Split":3360,"Piso Radiante":5913.6,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":5644.8,"Deck":0,"Grúa":2912}},
+  MAD_L:{sup:148,pb:140060.61,op:{"Platea de fundación + Granítico":30912,"Termomecánica por AA Split":7840,"Piso Radiante":13328,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":5644.8,"Deck":0,"Grúa":4368}},
+  MAD_XL:{sup:190,pb:187659.73,op:{"Platea de fundación + Granítico":43881.6,"Termomecánica por AA Split":11480,"Piso Radiante":17248,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":5644.8,"Deck":0,"Grúa":5824}},
+  S:{sup:65,pb:65749.29,op:{"Platea de fundación + Granítico":4550,"Termomecánica por AA Split":2205,"Piso Radiante":7280,"Línea Blanca":1428,"Paquete Solar":11200,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":980}},
+  M:{sup:86,pb:79651.88,op:{"Platea de fundación + Granítico":6020,"Termomecánica por AA Split":2205,"Piso Radiante":9632,"Línea Blanca":1428,"Paquete Solar":11200,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":980}},
+  L:{sup:130,pb:129804.25,op:{"Platea de fundación + Granítico":9100,"Termomecánica por AA Split":4410,"Piso Radiante":14560,"Línea Blanca":1428,"Paquete Solar":16800,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
+  XL:{sup:151,pb:144834.02,op:{"Platea de fundación + Granítico":10570,"Termomecánica por AA Split":4410,"Piso Radiante":16912,"Línea Blanca":1428,"Paquete Solar":19040,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
+};
+const COSTOS_LOG_TARIFA={MAD_S:3,MAD_M:6,MAD_L:9,MAD_XL:12,S:6,M:6,L:9,XL:12};
+const COSTOS_MONTAJE={MAD_S:[6391.13,9551.13,11951.13,12651.13],MAD_M:[10181.35,14601.35,17501.35,18201.35],MAD_L:[20711.86,28441.86,33516.86,34616.86],MAD_XL:[25256.68,33866.68,39831.68,41131.68],S:[3760,6050,8000,8600],M:[4600,7160,9260,9860],L:[7120,10490,13040,13640],XL:[8800,12710,15560,16160]};
+
+// Línea de producto por modelo
+const LINEA={
+  'MAD_S':'madera','MAD_M':'madera','MAD_L':'madera','MAD_XL':'madera',
+  'S':'modular','M':'modular','L':'modular','XL':'modular',
+};
+// Nombre de display (sin prefijo MAD_)
+const DNAME={'MAD_S':'S','MAD_M':'M','MAD_L':'L','MAD_XL':'XL','S':'S','M':'M','L':'L','XL':'XL'};
+const COSTOS_ORIG=JSON.parse(JSON.stringify(COSTOS));
+const LOG_TARIFA_ORIG=JSON.parse(JSON.stringify(COSTOS_LOG_TARIFA));
+const MONTAJE_ORIG=JSON.parse(JSON.stringify(COSTOS_MONTAJE));
+// ── Descripciones de precio base ─────────────────────────────────────────────
+const BINC_MADERA=[
+  "Estructura portante y muros exteriores en madera de pino impregnado, terminación natural sin pintura.",
+  "Cubierta de panel sándwich de 80 mm con pometina y plegado perimetral de terminación.",
+  "Divisiones interiores en placas de jequetibá.",
+  "Muros de baño revestidos en cerámica blanca 15 × 15 cm.",
+  "Cielorrasos en placas de guatambú.",
+  "Aberturas exteriores de aluminio anodizado natural con DVH.",
+  "Puerta exterior en madera de pino impregnado.",
+  "Puertas interiores enchapadas en jequetibá.",
+  "Instalación eléctrica completa con provisión de artefactos (tipo copa escolar).",
+  "Mobiliario de cocina en acero inoxidable pulido con estructura de acero, zócalo y cajonera.",
+  "Artefactos sanitarios Ferrum línea Bari y griferías FV línea Puelo. Inodoro Smart con función bidet.",
+  "Termotanque eléctrico de 155 litros.",
+];
+const BINC_MODULAR=[
+  "Estructura de acero autoportante y muros exteriores con panel sándwich prepintado de 50 mm.",
+  "Cubierta de panel sándwich de 50 mm con pometina y plegado perimetral de terminación.",
+  "Divisiones interiores en placas de jequetibá.",
+  "Muros de baño revestidos en cerámica blanca 15 × 15 cm.",
+  "Cielorrasos en placas de guatambú.",
+  "Aberturas exteriores de aluminio anodizado natural con DVH.",
+  "Puerta exterior en madera de pino impregnado.",
+  "Puertas interiores enchapadas en jequetibá.",
+  "Instalación eléctrica completa con provisión de artefactos (tipo copa escolar).",
+  "Mobiliario de cocina en acero inoxidable pulido con estructura de acero, zócalo y cajonera.",
+  "Artefactos sanitarios Ferrum línea Bari y griferías FV línea Puelo. Inodoro Smart con función bidet.",
+  "Termotanque eléctrico de 155 litros.",
+];
+// ── Descripciones de opcionales ───────────────────────────────────────────────
+const ODESC_MADERA={
+  "Platea de fundación + Granítico": "Platea de fundación con terminación en piso granítico.",
+  "Termomecánica por AA Split": "Sistema de climatización mediante equipos de aire acondicionado frío-calor tipo Split.",
+  "Piso Radiante": "Sistema de calefacción por piso radiante con caldera a gas y termostato.",
+  "Línea Blanca": "Provisión de línea blanca: anafe, horno y campana extractora.",
+  "Paquete Solar": "Paquete solar compuesto por equipamiento para generación/soporte energético.",
+  "Estufa a Leña": "Estufa a leña con kit de salida, instalada y operativa.",
+  "Pérgola": "Pérgola exterior.",
+  "Deck": "Deck exterior.",
+  "Grúa": "Servicio de grúa para operaciones de izaje y posicionamiento.",
+  "Montaje": "Montaje en obra de la unidad y componentes.",
+};
+const ODESC_MODULAR={
+  "Platea de fundación + Granítico": "Sistema de fundación de vigas cintas.",
+  "Termomecánica por AA Split": "Sistema de climatización mediante equipos de aire acondicionado frío-calor tipo Split.",
+  "Piso Radiante": "Sistema de calefacción por piso radiante con caldera a gas y termostato.",
+  "Línea Blanca": "Provisión de línea blanca: anafe, horno y campana extractora.",
+  "Paquete Solar": "Paquete solar compuesto por equipamiento para generación/soporte energético.",
+  "Estufa a Leña": "Estufa a leña con kit de salida, instalada y operativa.",
+  "Pérgola": "Pérgola exterior.",
+  "Deck": "Deck exterior.",
+  "Grúa": "Servicio de grúa para operaciones de izaje y posicionamiento.",
+  "Montaje": "Montaje en obra de la unidad y componentes.",
+};
+function getBINC(){return LINEA[sel]==='madera'?BINC_MADERA:BINC_MODULAR;}
+function getODESC(){return LINEA[sel]==='madera'?ODESC_MADERA:ODESC_MODULAR;}
+// Construye lista de descripciones de opcionales activos
+function getOpcionalesDesc(){
+  const desc=getODESC();
+  const result=[];
+  Object.entries(opts).forEach(([n,on])=>{
+    if(!on)return;
+    if(n==='Montaje'&&(!kmVal||kmVal<1))return;
+    const d=desc[n];
+    if(d)result.push(d);
+  });
+  // Logística siempre si hay km
+  if(kmVal&&kmVal>=100)result.push('Logística y transporte, calculados según kilometraje ('+kmVal+' km).');
+  return result;
+}
+let sel=null,opts={},kmVal=null;
+
+function calcLog(m,km){if(!km||km<100)return 0;const t=COSTOS_LOG_TARIFA[m]||0;if(!t)return 0;return t*km*(km>=101?0.7:1)*MARKUP;}
+function calcMontaje(m,km){if(!km||km<1)return 0;const t=COSTOS_MONTAJE[m];const c=km<=100?t[0]:km<=500?t[1]:km<=1200?t[2]:t[3];return c*MARKUP;}
+
+function initApp(){
+  document.getElementById('oFecha').value=new Date().toISOString().split('T')[0];
+  buildGrid();
+  selModel('MAD_S');
+  try{const saved=localStorage.getItem('labo_sheets_url');if(saved){const el=document.getElementById('sheetsUrl');if(el)el.value=saved;}}catch(e){}
+}
+
+// Safari-safe init
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initApp);}else{initApp();}
+
+function buildGrid(){
+  const gm=document.getElementById('mgrid-mad');
+  const gmod=document.getElementById('mgrid-mod');
+  gm.innerHTML=''; gmod.innerHTML='';
+  Object.entries(COSTOS).forEach(([k,d])=>{
+    const el=document.createElement('div');
+    el.className='mcard '+(LINEA[k]==='madera'?'mcard-madera':'mcard-modular');
+    el.id='mc_'+k;
+    el.onclick=()=>selModel(k);
+    el.innerHTML=`<div class="cbadge">✓</div><div class="mname">${DNAME[k]}</div><div class="msup">${d.sup} m²</div><div class="mprice">USD ${fmt(d.pb)}</div>`;
+    (LINEA[k]==='madera'?gm:gmod).appendChild(el);
+  });
+}
+
+function selModel(k){sel=k;document.querySelectorAll('.mcard').forEach(c=>c.classList.remove('selected'));document.getElementById('mc_'+k).classList.add('selected');opts={};Object.keys(COSTOS[k].op).forEach(n=>{opts[n]=false;});opts['Montaje']=false;kmVal=null;buildOpts(k);upd();}
+
+function getCant(){return parseInt(document.getElementById('cant').value)||1;}
+function buildOpts(k){const d=COSTOS[k];const list=document.getElementById('olist');list.innerHTML='';
+const cant=getCant();
+Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${name}</span></div><span class="oprice" id="pr_${name}">${price===0?'N/D':'USD '+fmt(price*cant)}</span>`;list.appendChild(row);});
+const tarifa=COSTOS_LOG_TARIFA[k];const lrow=document.createElement('div');lrow.className='lrow';lrow.id='lrow';
+lrow.innerHTML=`<div class="lleft"><span class="lname">LOGÍSTICA</span><div class="kmwrap"><label>Distancia</label><input type="number" id="kminput" placeholder="mín. 100" min="100" step="1" oninput="onKm(this.value)" onblur="if(this.value&&parseInt(this.value)<100){this.value=100;onKm(100);}"><span class="kmhint">km</span></div>${tarifa>0?`<span class="kmhint">USD ${fmt(tarifa)}/km · desc. 30% si >100 km</span>`:'<span class="kmhint" style="color:var(--red)">⚠ tarifa no configurada → ⚙ Actualizar Costos</span>'}</div><span class="oprice" id="lprice">—</span>`;list.appendChild(lrow);
+const hasMontaje=COSTOS_MONTAJE[k].some(v=>v>0);const mrow=document.createElement('div');mrow.className='orow'+(hasMontaje?'':' na');mrow.id='or_Montaje';
+mrow.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_Montaje" onclick="togOpt('Montaje',true)" ${!hasMontaje?'disabled':''}>✓</button><button id="no_Montaje" onclick="togOpt('Montaje',false)" ${!hasMontaje?'disabled':''} class="active-no">—</button></div><span class="oname">Montaje</span><span class="kmhint" style="margin-left:6px">${hasMontaje?'(según km ingresados)':'⚠ tramos no configurados → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="pr_Montaje">—</span>`;list.appendChild(mrow);}
+
+function togOpt(name,v){opts[name]=v;const row=document.getElementById('or_'+name);if(row){v?row.classList.add('on'):row.classList.remove('on');}const yb=document.getElementById('yes_'+name);const nb=document.getElementById('no_'+name);if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);if(name==='Montaje'&&kmVal){const mp=v?calcMontaje(sel,kmVal):0;document.getElementById('pr_Montaje').textContent=(v&&mp>0)?'USD '+fmt(mp):'—';}upd();}
+
+function onKm(v){var raw=parseInt(v);if(raw>0&&raw<100){var inp=document.getElementById('kminput');if(inp){inp.style.borderColor='var(--red)';}kmVal=null;}else{var inp2=document.getElementById('kminput');if(inp2)inp2.style.borderColor='';kmVal=(!v||v===''||isNaN(raw)||raw<100)?null:raw;}const cant=getCant();const lp=kmVal?calcLog(sel,kmVal):0;const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;document.getElementById('lprice').textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';document.getElementById('pr_Montaje').textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmt(mp*cant):'—';upd();}
+
+function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0)items.push({label:n,precio:d.op[n]});});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:`Logística (${kmVal} km)`,precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:`Montaje (${kmVal} km)`,precio:mp});}return items;}
+
+function refreshOptPrices(){
+  if(!sel)return;
+  const d=COSTOS[sel];const cant=getCant();
+  Object.entries(d.op).forEach(([name,price])=>{
+    const el=document.getElementById('pr_'+name);
+    if(el&&price>0)el.textContent='USD '+fmt(price*cant);
+  });
+  const lp=kmVal?calcLog(sel,kmVal):0;
+  const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;
+  const lel=document.getElementById('lprice');
+  if(lel)lel.textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';
+  const mel=document.getElementById('pr_Montaje');
+  if(mel)mel.textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmt(mp*cant):'—';
+}
+function upd(){if(!sel)return;refreshOptPrices();const d=COSTOS[sel];const cant=parseInt(document.getElementById('cant').value)||1;const items=getItems();const tot=items.reduce((s,i)=>s+i.precio,0);const body=document.getElementById('sbody');body.innerHTML='';// show/hide subtotal column
+document.querySelectorAll('.subtotal-col').forEach(el=>el.style.display=cant>1?'':'none');items.forEach(it=>{const pct=tot>0?(it.precio/tot*100):0;const m2=d.sup>0?(it.precio/d.sup):0;const tr=document.createElement('tr');const subtotalCell=cant>1?`<td class="pcol subtotal-col" style="color:var(--green-col,#2a6049);font-weight:700">USD ${fmt(it.precio*cant)}</td>`:'<td class="subtotal-col" style="display:none"></td>';tr.innerHTML=`<td>${it.label}</td><td class="pcol">USD ${fmt(it.precio)}</td>${subtotalCell}<td class="pcol" style="color:var(--muted);font-size:11px">${fmt(m2)}</td><td class="inccol"><div class="inc-wrap"><div class="inc-bar"><div class="inc-fill ${it.isBase?'base':'opt'}" style="width:${pct.toFixed(1)}%"></div></div><span class="inc-pct">${pct.toFixed(1)}%</span></div></td>`;body.appendChild(tr);});const tr=document.createElement('tr');tr.className='trow';const subtotalTotal=cant>1?`<td class="pcol subtotal-col"><strong>USD ${fmt(tot*cant)}</strong></td>`:'<td class="subtotal-col" style="display:none"></td>';tr.innerHTML=`<td><strong>TOTAL por unidad</strong></td><td class="pcol"><strong>USD ${fmt(tot)}</strong></td>${subtotalTotal}<td class="pcol" style="font-size:11px"><strong>${d.sup>0?fmt(tot/d.sup):'—'}</strong></td><td></td>`;body.appendChild(tr);document.getElementById('tdisplay').textContent=`USD ${fmt(tot*cant)}`;document.getElementById('pm2display').textContent=tot>0?`USD ${fmt(tot/d.sup)}/m²`:'—';document.getElementById('ctotal').textContent=cant>1?`Total ${cant} uds: USD ${fmt(tot*cant)}`:'';}
+
+function goStep(n){
+  if(n>1&&n<4&&!sel){
+    const mg=document.getElementById('mgrid-mad');
+    mg.style.outline='2px solid #B03020';
+    try{mg.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){mg.scrollIntoView();}
+    setTimeout(()=>mg.style.outline='',2000);
+    return;
+  }
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i+1===n));
+  document.querySelectorAll('.nbtn').forEach((b,i)=>{b.classList.remove('active','done');if(i+1===n)b.classList.add('active');else if(i+1<n&&n<4)b.classList.add('done');});
+  document.getElementById('stepLabel').textContent=n<4?`PASO ${n} / 3`:'COSTOS';
+  try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){window.scrollTo(0,0);}
+  if(n===4)buildCostEditor();
+}
+
+function gv(id){return document.getElementById(id).value||'—';}
+function fd(s){if(!s||s==='—')return '—';const[a,m,d]=s.split('-');return`${d}/${m}/${a}`;}
+
+function buildPreview(){const d=COSTOS[sel];const cant=parseInt(document.getElementById('cant').value)||1;const items=getItems();const tot=items.reduce((s,i)=>s+i.precio,0);const totO=tot*cant;const pago=document.getElementById('oPago').value;const notas=document.getElementById('oNotas').value;const rows=items.map(it=>`<tr><td>${it.label}</td><td style="text-align:center">${cant}</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace">USD ${fmt(it.precio)}</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace">USD ${fmt(it.precio*cant)}</td></tr>`).join('');const binc=getBINC();const inc=binc.map(i=>`<div class="iitem"><span class="dot"></span><span>${i}</span></div>`).join('');const opDesc=getOpcionalesDesc();const incOpts=opDesc.length>0?opDesc.map(i=>`<div class="iitem"><span class="dot" style="background:var(--black)"></span><span>${i}</span></div>`).join(''):'';
+document.getElementById('pvw').innerHTML=`
+<div class="oempresa">
+  <div>
+    <svg viewBox="4 0 139 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:32px;display:block;margin-bottom:6px">
+      <rect x="4"   y="0"  width="5"  height="28" fill="#1A1A1A"/>
+      <rect x="4"   y="23" width="22" height="5"  fill="#1A1A1A"/>
+      <rect x="38"  y="0"  width="5"  height="28" fill="#1A1A1A"/>
+      <rect x="59"  y="0"  width="5"  height="28" fill="#1A1A1A"/>
+      <rect x="38"  y="0"  width="26" height="5"  fill="#1A1A1A"/>
+      <rect x="38"  y="12" width="26" height="5"  fill="#1A1A1A"/>
+      <rect x="76"  y="0"  width="5"  height="28" fill="#1A1A1A"/>
+      <rect x="76"  y="0"  width="25" height="5"  fill="#1A1A1A"/>
+      <rect x="76"  y="12" width="22" height="5"  fill="#1A1A1A"/>
+      <rect x="76"  y="23" width="25" height="5"  fill="#1A1A1A"/>
+      <rect x="96"  y="0"  width="5"  height="17" fill="#1A1A1A"/>
+      <rect x="96"  y="11" width="5"  height="17" fill="#1A1A1A"/>
+      <rect x="113" y="0"  width="5"  height="28" fill="#1A1A1A"/>
+      <rect x="134" y="0"  width="5"  height="28" fill="#1A1A1A"/>
+      <rect x="113" y="0"  width="26" height="5"  fill="#1A1A1A"/>
+      <rect x="113" y="23" width="26" height="5"  fill="#1A1A1A"/>
+    </svg>
+    <div class="esub">Edificios Modulares — Oferta Comercial</div>
+  </div>
+  <div style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.8">
+    <div>N° ${gv('oNum')}</div><div>${fd(gv('oFecha'))}</div><div>Validez: ${gv('oValidez')} días</div>
+  </div>
+</div>
+<div class="odiv"></div>
+<div class="ometa">
+  <div><div class="lbl">Cliente</div><div class="val">${gv('cNombre')}</div></div>
+  <div><div class="lbl">Contacto</div><div class="val">${gv('cContacto')}</div></div>
+  <div><div class="lbl">Email</div><div class="val">${gv('cEmail')}</div></div>
+  <div><div class="lbl">Teléfono</div><div class="val">${gv('cTel')}</div></div>
+  <div><div class="lbl">Lugar de entrega</div><div class="val">${gv('oLugar')}</div></div>
+  <div><div class="lbl">Vendedor</div><div class="val">${gv('oVendedor')}</div></div>
+  <div><div class="lbl">Cond. de pago</div><div class="val">${pago}</div></div>
+  <div><div class="lbl">Plazo de entrega</div><div class="val">${gv('oPlazo')}</div></div>
+</div>
+<div class="ostitle">1. Alcance económico</div>
+<table class="oitems">
+  <thead><tr><th>Concepto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit. (USD)</th><th style="text-align:right">Subtotal (USD)</th></tr></thead>
+  <tbody>${rows}<tr class="otrow"><td colspan="3"><strong>TOTAL OFERTA</strong></td><td style="font-family:'IBM Plex Mono',monospace"><strong>USD ${fmt(totO)}</strong></td></tr></tbody>
+</table>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;letter-spacing:1px">* Valores en USD. No incluyen IVA (21%).</div>
+<div class="ostitle">2. El precio base incluye</div>
+<div class="igrid">${inc}</div>
+${incOpts?`<div class="ostitle">3. Opcionales incluidos</div><div class="igrid">${incOpts}</div>`:''}
+${notas?`<div class="ostitle">${incOpts?'4':'3'}. Notas adicionales</div><div class="nbox">${notas}</div>`:''}
+<div class="oftr">Generada el ${fd(gv('oFecha'))} — validez ${gv('oValidez')} días &nbsp;|&nbsp; LABO Gerencia Comercial &nbsp;|&nbsp; ${gv('oVendedor')}</div>`;}
+
+/* ═══════════════════════════════════════════════════════
+   PDF — UNA SOLA HOJA A4 — diseño compacto LABO
+   ═══════════════════════════════════════════════════════ */
+// ── Catalog PDFs (comprimidos 120DPI) ───────────────────────────────────────
+// LABO Madera: páginas comunes 0-7 + modelo + 16-26
+// Páginas por modelo Madera: S=8,9 | M=10,11 | L=12,13 | XL=14,15
+const CATALOG_B64_MADERA='';
+// LABO Modular: páginas comunes 0-7 + modelo + 20-30
+// S: 8,9,10 | M: 8,11,12 | L: 13,14,15,16 | XL: 13,17,18,19
+const CATALOG_B64_MODULAR='';
+const CATALOG_B64_MAP={'madera':null,'modular':null};// set at runtime
+
+const CATALOG_MODEL_PAGES={
+  'madera': {'S':[8,9],'M':[10,11],'L':[12,13],'XL':[14,15]},
+  'modular': {'S':[8,9,10],'M':[8,11,12],'L':[13,14,15,16],'XL':[13,17,18,19]}
+};
+const CATALOG_COMMON_BEFORE=Array.from({length:8},(_,i)=>i);  // 0-7 both catalogs
+const CATALOG_COMMON_AFTER_MADERA =Array.from({length:11},(_,i)=>i+16); // 16-26
+const CATALOG_COMMON_AFTER_MODULAR=Array.from({length:11},(_,i)=>i+20); // 20-30
+
+function generatePDF(){
+  if(typeof window.jspdf==='undefined'){alert('El generador de PDF está cargando. Intentá de nuevo.');return;}
+  var doc=_buildOfferPDF();
+  var linea=LINEA[sel];
+  var catalogKey=DNAME[sel];
+  // Save lead to CRM storage
+  saveLead();
+  var hasCatalog=(linea==='madera'||linea==='modular')&&CATALOG_MODEL_PAGES[linea]&&CATALOG_MODEL_PAGES[linea][catalogKey];
+  if(hasCatalog&&typeof PDFLib!=='undefined'){
+    _mergePDFs(doc,linea,catalogKey);
+  } else {
+    // No catalog or PDFLib not loaded — download offer only
+    var numPad=(gv('oNum')||'SN').replace(/[\\/\/:*?"<>|]/g,'-').trim();
+    var clientName=(gv('cNombre')||'Cliente').replace(/[\\/\/:*?"<>|]/g,'-').trim();
+    doc.save(numPad+' '+clientName+' - '+DNAME[sel]+'.pdf');
+  }
+}
+
+async function _mergePDFs(jspdfDoc,linea,modelKey){
+  try{
+    // Download catalog PDF from SharePoint via Graph API
+    await _initMSAL();await _getSiteDrive();
+    var catFileName=linea==='modular'?'cat_modular.pdf':'cat_madera.pdf';
+    var catPath=MSAL_CONFIG.dataFolder+'/'+catFileName;
+    var catRes=await _gFetch('/drives/'+_driveId+'/root:/'+catPath+':/content');
+    if(!catRes.ok)throw new Error('Catálogo no encontrado en SharePoint ('+catFileName+'). Subilo a la carpeta LABO-CRM.');
+    var catBuffer=await catRes.arrayBuffer();
+
+    // Merge with offer
+    var offerBytes=jspdfDoc.output('arraybuffer');
+    var offerDoc=await PDFLib.PDFDocument.load(offerBytes);
+    var catDoc=await PDFLib.PDFDocument.load(catBuffer);
+    var merged=await PDFLib.PDFDocument.create();
+    // Catalog first: common intro + model pages + common close
+    var afterPages=linea==='modular'?CATALOG_COMMON_AFTER_MODULAR:CATALOG_COMMON_AFTER_MADERA;
+    var introPgs=await merged.copyPages(catDoc,CATALOG_COMMON_BEFORE);
+    introPgs.forEach(function(p){merged.addPage(p);});
+    var modPgs=await merged.copyPages(catDoc,CATALOG_MODEL_PAGES[linea][modelKey]);
+    modPgs.forEach(function(p){merged.addPage(p);});
+    var closePgs=await merged.copyPages(catDoc,afterPages);
+    closePgs.forEach(function(p){merged.addPage(p);});
+    // Offer at end — scaled to catalog page size
+    var catPage0=catDoc.getPage(0);
+    var catSize=catPage0.getSize();
+    var offerIndices=offerDoc.getPageIndices();
+    for(var oi=0;oi<offerIndices.length;oi++){
+      var cp=await merged.copyPages(offerDoc,[offerIndices[oi]]);
+      var op=cp[0];merged.addPage(op);
+      var os=op.getSize();
+      op.setSize(catSize.width,catSize.height);
+      op.scaleContent(catSize.width/os.width,catSize.height/os.height);
+    }
+    var mergedBytes=await merged.save();
+    var blob=new Blob([mergedBytes],{type:'application/pdf'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    var numPad=(gv('oNum')||'SN').replace(/[\/\/:*?"<>|]/g,'-').trim();
+    var clientName=(gv('cNombre')||'Cliente').replace(/[\/\/:*?"<>|]/g,'-').trim();
+    a.href=url;a.download=numPad+' '+clientName+' - '+DNAME[sel]+'.pdf';
+    document.body.appendChild(a);a.click();
+    document.body.removeChild(a);URL.revokeObjectURL(url);
+  }catch(e){
+    console.error('Merge error:',e);
+    alert('No se pudo combinar con el catálogo: '+e.message+'\n\nDescargando solo la oferta comercial.');
+    var numPad=(gv('oNum')||'SN').replace(/[\/\/:*?"<>|]/g,'-').trim();
+    var clientName=(gv('cNombre')||'Cliente').replace(/[\/\/:*?"<>|]/g,'-').trim();
+    jspdfDoc.save(numPad+' '+clientName+' - '+DNAME[sel]+'.pdf');
+  }
+}
+
+
+function _buildOfferPDF(){
+  if(typeof window.jspdf==='undefined'){alert('El generador de PDF está cargando. Intentá de nuevo en un momento.');return;}
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=297,H=210,mg=14;
+  let y=0;
+
+  const d=COSTOS[sel];
+  const cant=parseInt(document.getElementById('cant').value)||1;
+  const items=getItems();
+  const tot=items.reduce((s,i)=>s+i.precio,0);
+  const totO=tot*cant;
+  const pago=document.getElementById('oPago').value;
+  const fecha=fd(gv('oFecha'));
+  const num=gv('oNum'),val=gv('oValidez'),vend=gv('oVendedor');
+  const tW=W-mg*2;
+
+  /* ── HEADER NEGRO ── */
+  doc.setFillColor(10,10,10);
+  doc.rect(0,0,W,26,'F');
+
+  // LABO wordmark — coords derivadas 1:1 del SVG (viewBox "4 0 139 28", altura 6mm exacta)
+  // Cada entrada: [dx, dy, w, h] en mm desde (mg, 7)
+  const LR=[[0,0,1.071,6],[0,4.929,4.714,1.071],[7.286,0,1.071,6],[11.786,0,1.071,6],[7.286,0,5.571,1.071],[7.286,2.571,5.571,1.071],[15.429,0,1.071,6],[15.429,0,5.357,1.071],[15.429,2.571,4.714,1.071],[15.429,4.929,5.357,1.071],[19.714,0,1.071,3.643],[19.714,2.357,1.071,3.643],[23.357,0,1.071,6],[27.857,0,1.071,6],[23.357,0,5.571,1.071],[23.357,4.929,5.571,1.071]];
+  doc.setFillColor(245,244,240);
+  LR.forEach(([dx,dy,w,h])=>doc.rect(mg+dx,7+dy,w,h,'F'));
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7);
+  doc.setTextColor(138,135,127);
+  doc.text('OFERTA ECONÓMICA',W-mg,10,{align:'right'});
+  doc.text(`N° ${num}  |  ${fecha}  |  Validez: ${val} días`,W-mg,15.5,{align:'right'});
+  y=32;
+
+  /* ── DATOS CLIENTE (2 columnas) ── */
+  const meta=[
+    ['Cliente',gv('cNombre')],['Contacto',gv('cContacto')],
+    ['Email',gv('cEmail')],['Teléfono',gv('cTel')],
+    ['Lugar de entrega',gv('oLugar')],['Vendedor',vend],
+    ['Cond. de pago',pago],['Plazo de entrega',gv('oPlazo')]
+  ];
+  const cW2=tW/2;
+  // Cada celda tiene: label (6pt ≈ 2.1mm) + gap 1mm + valor (8pt ≈ 2.8mm) = bloque ≈ 5.9mm
+  // 4 filas → contenido total ≈ 23.6mm. Con margen interno 4mm arriba y abajo → boxH = 32mm
+  const boxH=32;
+  const rowH2=7.0;
+  const padV=1.5;
+  doc.setFillColor(236,234,227);
+  doc.rect(mg,y,tW,boxH,'F');
+  meta.forEach(([l,v],i)=>{
+    const col=i%2, row=Math.floor(i/2);
+    const x=mg+5+col*cW2;
+    // Label: centered in top portion of cell
+    const labelY = y + padV + row*rowH2 + 1.8;
+    // Value: centered in the space between this label and the next
+    const valueY = y + padV + row*rowH2 + 5.2;
+    doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
+    doc.text(l.toUpperCase(), x, labelY);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(10,10,10);
+    doc.text(String(v).substring(0,44), x, valueY);
+  });
+  y+=boxH+4;
+
+  /* ── LÍNEA ── */
+  doc.setDrawColor(10,10,10);doc.setLineWidth(0.3);
+  doc.line(mg,y,W-mg,y);
+  y+=5;
+
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     LAYOUT EN DOS COLUMNAS — todo en una sola hoja A4 landscape
+     Columna izquierda (55%): tabla de precios + condiciones + notas
+     Columna derecha  (42%): descripciones (precio base + opcionales)
+  ═══════════════════════════════════════════════════════════════════════ */
+  const colGap = 6;
+  const colL_w = tW * 0.55;
+  const colR_w = tW - colL_w - colGap;
+  const colL_x = mg;
+  const colR_x = mg + colL_w + colGap;
+  const colTop = y;  // y after header + client box
+
+  // ── COLUMNA IZQUIERDA ────────────────────────────────────────────────
+  let yL = colTop;
+
+  // Section label
+  doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
+  doc.text('ALCANCE ECONÓMICO',colL_x,yL);
+  doc.setDrawColor(200,197,188);doc.setLineWidth(0.2);
+  doc.line(colL_x+doc.getTextWidth('ALCANCE ECONÓMICO')+2,yL-0.5,colL_x+colL_w,yL-0.5);
+  yL+=4.5;
+
+  // Table header
+  const colsL=[colL_w*0.50,colL_w*0.14,colL_w*0.18,colL_w*0.18];
+  doc.setFillColor(10,10,10);doc.rect(colL_x,yL,colL_w,5.5,'F');
+  doc.setTextColor(245,244,240);doc.setFont('helvetica','bold');doc.setFontSize(6);
+  ['Concepto','Cant.','Unit. (USD)','Total (USD)'].forEach((h,i)=>{
+    const cx=colL_x+colsL.slice(0,i).reduce((a,b)=>a+b,0);
+    i===0?doc.text(h,cx+2,yL+3.8):doc.text(h,cx+colsL[i]-2,yL+3.8,{align:'right'});
+  });
+  yL+=5.5;
+
+  items.forEach((it,idx)=>{
+    const rh=4.5;
+    if(idx%2===0){doc.setFillColor(248,247,244);doc.rect(colL_x,yL,colL_w,rh,'F');}
+    doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(10,10,10);
+    [it.label,String(cant),`USD ${fmt(it.precio)}`,`USD ${fmt(it.precio*cant)}`].forEach((v,i)=>{
+      const cx=colL_x+colsL.slice(0,i).reduce((a,b)=>a+b,0);
+      i===0?doc.text(v.substring(0,48),cx+2,yL+3.2):doc.text(v,cx+colsL[i]-2,yL+3.2,{align:'right'});
+    });
+    yL+=rh;
+  });
+
+  // Total row
+  doc.setFillColor(10,10,10);doc.rect(colL_x,yL,colL_w,6.5,'F');
+  doc.setTextColor(245,244,240);doc.setFont('helvetica','bold');doc.setFontSize(7.5);
+  doc.text('TOTAL OFERTA',colL_x+2,yL+4.5);
+  doc.text(`USD ${fmt(totO)}`,colL_x+colL_w-2,yL+4.5,{align:'right'});
+  yL+=6.5;
+
+  doc.setFont('helvetica','italic');doc.setFontSize(5.5);doc.setTextColor(138,135,127);
+  doc.text('* Valores en USD. No incluyen IVA (21%).',colL_x,yL+3.5);
+  yL+=8;
+
+  // Condiciones
+  const yCondiciones = yL; // save this y to sync right column
+  doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
+  doc.text('CONDICIONES GENERALES',colL_x,yL);
+  doc.setDrawColor(200,197,188);doc.setLineWidth(0.2);
+  doc.line(colL_x+doc.getTextWidth('CONDICIONES GENERALES')+2,yL-0.5,colL_x+colL_w,yL-0.5);
+  yL+=4.5;
+
+  doc.setFillColor(236,234,227);doc.rect(colL_x,yL,colL_w,11,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(5.5);doc.setTextColor(138,135,127);
+  doc.text('CONDICIÓN DE PAGO',colL_x+3,yL+3.5);
+  doc.text('PLAZO DE ENTREGA',colL_x+colL_w/2+3,yL+3.5);
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(10,10,10);
+  doc.text(pago.substring(0,32),colL_x+3,yL+8.5);
+  doc.text(gv('oPlazo').substring(0,24),colL_x+colL_w/2+3,yL+8.5);
+  yL+=14;
+
+  // Notas
+  const notas=document.getElementById('oNotas').value;
+  if(notas&&yL<H-24){
+    doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
+    doc.text('NOTAS ADICIONALES',colL_x,yL);
+    doc.line(colL_x+doc.getTextWidth('NOTAS ADICIONALES')+2,yL-0.5,colL_x+colL_w,yL-0.5);
+    yL+=4.5;
+    doc.setDrawColor(10,10,10);doc.setLineWidth(0.8);
+    doc.line(colL_x,yL,colL_x,yL+16);doc.setLineWidth(0.2);
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(10,10,10);
+    const notasLines=doc.splitTextToSize(notas,colL_w-7);
+    doc.text(notasLines.slice(0,4),colL_x+4,yL+5);
+  }
+
+  // ── COLUMNA DERECHA ──────────────────────────────────────────────────
+  let yR = colTop;
+  const dotSz = 1.2;
+
+  // Vertical separator
+  doc.setDrawColor(210,207,198);doc.setLineWidth(0.3);
+  doc.line(colR_x-3,colTop,colR_x-3,H-16);
+
+  // Precio base incluye
+  const BINC=getBINC();
+  doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
+  doc.text('PRECIO BASE INCLUYE',colR_x,yR);
+  doc.setDrawColor(200,197,188);doc.setLineWidth(0.2);
+  doc.line(colR_x+doc.getTextWidth('PRECIO BASE INCLUYE')+2,yR-0.5,colR_x+colR_w,yR-0.5);
+  yR+=4.5;
+
+  doc.setFont('helvetica','normal');doc.setFontSize(6.2);doc.setTextColor(10,10,10);
+  BINC.forEach((inc)=>{
+    const wrapped=doc.splitTextToSize(inc,colR_w-5);
+    doc.setFillColor(10,10,10);doc.rect(colR_x,yR-1,dotSz,dotSz,'F');
+    doc.text(wrapped[0],colR_x+4,yR);
+    yR+=4.2;
+  });
+  yR+=3;
+
+  // Opcionales incluidos — aligned with Condiciones Generales
+  yR = yCondiciones;
+  const opDescPDF=getOpcionalesDesc();
+  if(opDescPDF.length>0){
+    doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
+    doc.text('OPCIONALES INCLUIDOS',colR_x,yR);
+    doc.setDrawColor(200,197,188);doc.setLineWidth(0.2);
+    doc.line(colR_x+doc.getTextWidth('OPCIONALES INCLUIDOS')+2,yR-0.5,colR_x+colR_w,yR-0.5);
+    yR+=4.5;
+    doc.setFont('helvetica','normal');doc.setFontSize(6.2);doc.setTextColor(10,10,10);
+    opDescPDF.forEach((inc)=>{
+      const wrapped=doc.splitTextToSize(inc,colR_w-5);
+      doc.setFillColor(60,130,90);doc.rect(colR_x,yR-1,dotSz,dotSz,'F');
+      doc.text(wrapped[0],colR_x+4,yR);
+      yR+=4.2;
+    });
+  }
+
+  /* ── FOOTER ── */
+  const fY=H-12;
+  doc.setFillColor(10,10,10);doc.rect(0,fY-4,W,H,'F');
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(138,135,127);
+  doc.text(`Generado el ${fecha}  |  LABO — Gerencia Comercial  |  ${vend}  |  labo.com.ar`,mg,fY+2);
+  doc.text(`OE N° ${num}`,W-mg,fY+2,{align:'right'});
+
+  const numPad=String(num||'0').replace(/\D/g,'').padStart(4,'0');
+  const clientName=(gv('cNombre')||'Cliente').replace(/[\/\\:*?"<>|]/g,'-').trim();
+  const fileName=`${numPad} ${clientName} - ${sel}.pdf`;
+  return doc;
+}
+
+function buildCostEditor(){const wrap=document.getElementById('costEditorWrap');const models=Object.keys(COSTOS);let html=`<div class="cost-section"><div class="cost-section-title">Precios de Venta — Base y Opcionales</div><div style="overflow-x:auto"><table class="cost-table"><thead><tr><th>Concepto</th>`;models.forEach(m=>html+=`<th>${DNAME[m]||m}<br><span style="font-weight:400;opacity:.7;font-size:.7rem">${COSTOS[m].sup} m²</span></th>`);html+=`</tr></thead><tbody><tr><td><strong>Precio base</strong></td>`;models.forEach(m=>html+=`<td><input type="number" data-sec="pb" data-model="${m}" value="${COSTOS[m].pb}" min="0" step="0.01"></td>`);html+=`</tr>`;const opNames=Object.keys(COSTOS.MAD_S.op);opNames.forEach(op=>{html+=`<tr><td>${op}</td>`;models.forEach(m=>{const v=COSTOS[m].op[op];html+=`<td><input type="number" data-sec="op" data-model="${m}" data-op="${op}" value="${v}" min="0" step="0.01"></td>`;});html+=`</tr>`;});html+=`</tbody></table></div></div>`;html+=`<div class="cost-section"><div class="cost-section-title">Logística — Tarifa USD/km</div><div class="log-formula">Precio Venta = tarifa × km × (km≥101 ? 0.7 : 1) × ${MARKUP}</div><div style="overflow-x:auto;margin-top:10px"><table class="cost-table"><thead><tr><th>Modelo</th>`;models.forEach(m=>html+=`<th>${m}</th>`);html+=`</tr></thead><tbody><tr><td>Tarifa (USD/km)</td>`;models.forEach(m=>html+=`<td><input type="number" data-sec="log" data-model="${m}" value="${COSTOS_LOG_TARIFA[m]}" min="0" step="0.01"></td>`);html+=`</tr></tbody></table></div></div>`;const tl=['≤ 100 km','101–500 km','501–1200 km','> 1200 km'];html+=`<div class="cost-section"><div class="cost-section-title">Montaje — Costo por tramos × 1.4</div><div style="overflow-x:auto"><table class="cost-table"><thead><tr><th>Tramo / Modelo</th>`;models.forEach(m=>html+=`<th>${m}</th>`);html+=`</tr></thead><tbody>`;tl.forEach((label,ti)=>{html+=`<tr><td>${label}</td>`;models.forEach(m=>html+=`<td><input type="number" data-sec="montaje" data-model="${m}" data-tramo="${ti}" value="${COSTOS_MONTAJE[m][ti]}" min="0" step="0.01"></td>`);html+=`</tr>`;});html+=`</tbody></table></div></div>`;wrap.innerHTML=html;}
+
+function aplicarCostos(){document.querySelectorAll('#costEditorWrap input').forEach(inp=>{const sec=inp.dataset.sec,m=inp.dataset.model,v=parseFloat(inp.value)||0;if(sec==='pb')COSTOS[m].pb=v;else if(sec==='op')COSTOS[m].op[inp.dataset.op]=v;else if(sec==='log')COSTOS_LOG_TARIFA[m]=v;else if(sec==='montaje')COSTOS_MONTAJE[m][parseInt(inp.dataset.tramo)]=v;});buildGrid();if(sel)selModel(sel);const msg=document.getElementById('costoMsg');msg.style.display='block';setTimeout(()=>msg.style.display='none',4000);}
+
+function resetCostos(){Object.keys(COSTOS_ORIG).forEach(k=>{COSTOS[k].pb=COSTOS_ORIG[k].pb;Object.keys(COSTOS_ORIG[k].op).forEach(op=>{COSTOS[k].op[op]=COSTOS_ORIG[k].op[op];});COSTOS_LOG_TARIFA[k]=LOG_TARIFA_ORIG[k];COSTOS_MONTAJE[k]=[...MONTAJE_ORIG[k]];});buildGrid();if(sel)selModel(sel);buildCostEditor();}
+
+
+/* ── GOOGLE SHEETS SYNC ── */
+function syncSheets(){
+  const url=document.getElementById('sheetsUrl').value.trim();
+  const msgEl=document.getElementById('sheetsMsg');
+  if(!url){msgEl.style.display='block';msgEl.style.borderLeftColor='var(--red)';msgEl.textContent='⚠ Ingresá la URL del Google Sheets publicado como CSV.';setTimeout(()=>msgEl.style.display='none',4000);return;}
+  msgEl.style.display='block';msgEl.style.borderLeftColor='var(--black)';msgEl.textContent='⏳ Conectando con Google Sheets…';
+  const proxy='https://api.allorigins.win/get?url='+encodeURIComponent(url);
+  fetch(proxy)
+    .then(function(resp){if(!resp.ok)throw new Error('No se pudo conectar');return resp.json();})
+    .then(function(json){
+      const csv=json.contents;
+      const lines=csv.split('\n').map(function(l){return l.split(',').map(function(c){return c.replace(/^"|"$/g,'').trim();});});
+      var updated=0;
+      lines.forEach(function(cols){
+        if(cols.length<3)return;
+        var model=cols[0],field=cols[1],rest=cols.slice(2);
+        if(!COSTOS[model])return;
+        if(field==='pb'&&rest[0]){var v=parseFloat(rest[0]);if(!isNaN(v)){COSTOS[model].pb=v;updated++;}}
+        else if(field==='op'&&rest.length>=2){var opName=rest[0],v2=parseFloat(rest[1]);if(opName&&!isNaN(v2)&&COSTOS[model].op.hasOwnProperty(opName)){COSTOS[model].op[opName]=v2;updated++;}}
+        else if(field==='log'&&rest[0]){var v3=parseFloat(rest[0]);if(!isNaN(v3)){COSTOS_LOG_TARIFA[model]=v3;updated++;}}
+        else if(field==='montaje'&&rest.length>=2){var ti=parseInt(rest[0]),v4=parseFloat(rest[1]);if(!isNaN(ti)&&!isNaN(v4)&&ti>=0&&ti<=3){COSTOS_MONTAJE[model][ti]=v4;updated++;}}
+      });
+      buildGrid();if(sel)selModel(sel);buildCostEditor();
+      try{localStorage.setItem('labo_sheets_url',url);}catch(e){}
+      msgEl.style.borderLeftColor='var(--black)';
+      msgEl.textContent='✓ Sincronizado. '+updated+' valores actualizados desde Google Sheets.';
+      setTimeout(function(){msgEl.style.display='none';},5000);
+    })
+    .catch(function(e){
+      msgEl.style.borderLeftColor='var(--red)';
+      msgEl.textContent='⚠ Error: '+e.message+'. Verificá que la hoja esté publicada como CSV.';
+      setTimeout(function(){msgEl.style.display='none';},6000);
+    });
+}
+
+// ── Contraseña panel Costos ───────────────────────────────────────────────────
+// Para cambiar la contraseña: reemplazá PASS_KEY por btoa('tu_nueva_contraseña')
+// Contraseña actual: labo2024
+const PASS_KEY='bGFibzIwMjQ=';
+
+function askPass(){
+  document.getElementById('passInput').value='';
+  document.getElementById('passError').classList.remove('show');
+  document.getElementById('passInput').classList.remove('error');
+  document.getElementById('passOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('passInput').focus(),50);
+}
+
+function closePass(e){
+  if(e&&e.target!==document.getElementById('passOverlay'))return;
+  document.getElementById('passOverlay').classList.remove('show');
+}
+
+function checkPass(){
+  const val=document.getElementById('passInput').value;
+  if(btoa(val)===PASS_KEY){
+    document.getElementById('passOverlay').classList.remove('show');
+    goStep(4);
+  } else {
+    document.getElementById('passError').classList.add('show');
+    const inp=document.getElementById('passInput');
+    inp.classList.add('error');
+    inp.select();
+  }
+}
+// ── CRM: guardar cotización ───────────────────────────────────────────────────
+
+// ── SharePoint / Microsoft Graph storage (cotizador) ─────────────────────────
+const MSAL_CONFIG = {
+  clientId: 'f47da2c5-7922-4e2f-8648-51b8486552fb',
+  tenantId: 'c408b6d8-ae0b-4d30-9056-da52e18116c4',
+  sitePath: '/sites/GerenciaComercial2',
+  tenantDomain: '4housing22.sharepoint.com',
+  authority: 'https://login.microsoftonline.com/c408b6d8-ae0b-4d30-9056-da52e18116c4',
+  redirectUri: 'https://4housing22.sharepoint.com/sites/GerenciaComercial2/Documentos%20compartidos/02%20PLACE/01%20GERENCIA%20COMERCIAL/RC-01%20COTIZACIONES/0000%20CLIENTE%20-%20DESCRIPCION%20(PLANTILLAS)/03%20COSTEO/LABO/cotizador_labo_V40.html',
+  redirectUri: 'https://4housing22.sharepoint.com/sites/GerenciaComercial2/Documentos%20compartidos/02%20PLACE/01%20GERENCIA%20COMERCIAL/RC-01%20COTIZACIONES/0000%20CLIENTE%20-%20DESCRIPCION%20(PLANTILLAS)/03%20COSTEO/LABO/cotizador_labo_V40.html',
+  scopes: ['https://graph.microsoft.com/Files.ReadWrite.All','https://graph.microsoft.com/Sites.ReadWrite.All'],
+  dataFile: 'labo_crm_data.json',
+  dataFolder: 'LABO-CRM'
+};
+let _msalInst=null,_gToken=null,_siteId=null,_driveId=null;
+async function _initMSAL(){
+  if(_msalInst)return true;
+  _msalInst=new msal.PublicClientApplication({auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});
+  await _msalInst.initialize();
+  const acc=_msalInst.getAllAccounts();
+  if(acc.length>0){try{const r=await _msalInst.acquireTokenSilent({scopes:MSAL_CONFIG.scopes,account:acc[0]});_gToken=r.accessToken;return true;}catch(e){}}
+  try{const r=await _msalInst.loginPopup({scopes:MSAL_CONFIG.scopes,redirectUri:MSAL_CONFIG.redirectUri});_gToken=r.accessToken;return true;}catch(e){return false;}
+}
+async function _gFetch(url,opts){
+  if(!_gToken)await _initMSAL();
+  return fetch('https://graph.microsoft.com/v1.0'+url,{...opts,headers:{'Authorization':'Bearer '+_gToken,'Content-Type':'application/json',...(opts&&opts.headers)}});
+}
+async function _getSiteDrive(){
+  if(_siteId&&_driveId)return;
+  const s=await _gFetch('/sites/'+MSAL_CONFIG.tenantDomain+':'+MSAL_CONFIG.sitePath);
+  _siteId=(await s.json()).id;
+  const d=await _gFetch('/sites/'+_siteId+'/drive');
+  _driveId=(await d.json()).id;
+}
+async function _spSaveLead(lead){
+  await _initMSAL();await _getSiteDrive();
+  // Read existing
+  let leads=[];
+  try{
+    const r=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content');
+    if(r.ok)leads=JSON.parse(await r.text());
+  }catch(e){}
+  leads.unshift(lead);
+  // Ensure folder
+  const chk=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder);
+  if(chk.status===404)await _gFetch('/drives/'+_driveId+'/root/children',{method:'POST',body:JSON.stringify({name:MSAL_CONFIG.dataFolder,folder:{},"@microsoft.graph.conflictBehavior":'rename'})});
+  // Write
+  await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(leads)});
+  try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
+}
+
+function saveLead(){
+  try{
+    var items=getItems();
+    var cant=parseInt(document.getElementById('cant').value)||1;
+    var tot=items.reduce(function(s,i){return s+i.precio;},0)*cant;
+    var lead={
+      id:'lead_'+Date.now(),
+      fecha:new Date().toISOString(),
+      num:gv('oNum'),cliente:gv('cNombre'),contacto:gv('cContacto'),
+      email:gv('cEmail'),tel:gv('cTel'),vendedor:gv('oVendedor'),lugar:gv('oLugar'),
+      linea:LINEA[sel]==='madera'?'LABO Madera':'LABO Modular',
+      modelo:DNAME[sel],sup:COSTOS[sel].sup,cant:cant,total:tot,
+      pago:document.getElementById('oPago').value,plazo:gv('oPlazo'),
+      etapa:'Cotizado',notas:gv('oNotas'),actividad:[]
+    };
+    _spSaveLead(lead).catch(function(e){
+      // Fallback to localStorage if SP fails
+      console.warn('SP save failed, using localStorage:',e);
+      try{var ex=[];try{var r=localStorage.getItem('labo_crm_leads');if(r)ex=JSON.parse(r);}catch(e2){}ex.unshift(lead);localStorage.setItem('labo_crm_leads',JSON.stringify(ex));}catch(e3){}
+    });
+  }catch(e){console.warn('saveLead error:',e);}
+}
+
+function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+</script>
+</body>
+</html>
