@@ -1007,6 +1007,15 @@ const CATALOG_COMMON_AFTER_MODULAR=Array.from({length:11},(_,i)=>i+20); // 20-30
 
 function generatePDF(){
   if(typeof window.jspdf==='undefined'){alert('El generador de PDF está cargando. Intentá de nuevo.');return;}
+  // Pre-authenticate before generating — ensures token is ready
+  _initMSAL().then(function(ready){
+    if(ready===false)return; // Safari redirect in progress
+    _doGeneratePDF();
+  }).catch(function(){
+    _doGeneratePDF(); // proceed anyway, will fail gracefully if no token
+  });
+}
+function _doGeneratePDF(){
   var doc=_buildOfferPDF();
   var linea=LINEA[sel];
   var catalogKey=DNAME[sel];
@@ -1079,7 +1088,19 @@ async function _mergePDFs(jspdfDoc,linea,modelKey){
     document.body.removeChild(a);URL.revokeObjectURL(url);
   }catch(e){
     console.error('Merge error:',e);
-    alert('No se pudo combinar con el catálogo: '+e.message+'\n\nDescargando solo la oferta comercial.');
+    // If auth error and Safari, token may have just been obtained via redirect
+    // Wait 2s and retry once before giving up
+    if(e.message&&e.message.includes('401')&&_gToken===null){
+      console.log('Auth error — waiting for token and retrying...');
+      await new Promise(function(r){setTimeout(r,2000);});
+      try{
+        await _initMSAL();
+        if(_gToken){
+          await _mergePDFs(jspdfDoc,linea,modelKey);
+          return;
+        }
+      }catch(e2){console.warn('Retry failed:',e2);}
+    }
     var numPad=(gv('oNum')||'SN').replace(/[\/\/:*?"<>|]/g,'-').trim();
     var clientName=(gv('cNombre')||'Cliente').replace(/[\/\/:*?"<>|]/g,'-').trim();
     jspdfDoc.save(numPad+' '+clientName+' - '+DNAME[sel]+'.pdf');
