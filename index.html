@@ -1368,9 +1368,18 @@ async function _initMSAL(){
   if(_msalInst)return true;
   _msalInst=new msal.PublicClientApplication({auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});
   await _msalInst.initialize();
+  try{const resp=await _msalInst.handleRedirectPromise();if(resp&&resp.accessToken){_gToken=resp.accessToken;return true;}}catch(e){console.warn('handleRedirect:',e);}
   const acc=_msalInst.getAllAccounts();
   if(acc.length>0){try{const r=await _msalInst.acquireTokenSilent({scopes:MSAL_CONFIG.scopes,account:acc[0]});_gToken=r.accessToken;return true;}catch(e){}}
-  try{const r=await _msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});_gToken=r.accessToken;return true;}catch(e){return false;}
+  try{
+    var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if(isSafari){
+      await _msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
+      return false;
+    }
+    const r=await _msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
+    _gToken=r.accessToken;return true;
+  }catch(e){return false;}
 }
 async function _gFetch(url,opts){
   if(!_gToken)await _initMSAL();
