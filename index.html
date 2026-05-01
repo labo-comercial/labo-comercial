@@ -645,11 +645,21 @@
         <div class="fg"><label>Email</label><input type="email" id="cEmail" placeholder="contacto@empresa.com"></div>
         <div class="fg"><label>Teléfono</label><input type="text" id="cTel" placeholder="+54 11 ···"></div>
       </div>
+      <div class="frow">
+        <div class="fg"><label>¿Posee terreno?</label>
+          <select id="cTerreno">
+            <option value="">— Sin especificar —</option>
+            <option value="Sí, posee terreno">Sí, posee terreno</option>
+            <option value="No posee terreno">No posee terreno</option>
+            <option value="En búsqueda de terreno">En búsqueda de terreno</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="ctitle">Datos de la oferta</div>
       <div class="frow frow3">
-        <div class="fg"><label>N° de oferta</label><input type="text" id="oNum" placeholder="OC-2026-001"></div>
+        <div class="fg"><label>N° de oferta</label><input type="text" id="oNum" readonly style="background:var(--grey);cursor:default;color:var(--muted);font-family:'IBM Plex Mono',monospace"></div>
         <div class="fg"><label>Fecha</label><input type="date" id="oFecha"></div>
         <div class="fg"><label>Validez (días)</label><input type="number" id="oValidez" value="30" min="1"></div>
       </div>
@@ -830,8 +840,20 @@ let sel=null,opts={},kmVal=null;
 function calcLog(m,km){if(!km||km<100)return 0;const t=COSTOS_LOG_TARIFA[m]||0;if(!t)return 0;return t*km*(km>=101?0.7:1)*MARKUP;}
 function calcMontaje(m,km){if(!km||km<1)return 0;const t=COSTOS_MONTAJE[m];const c=km<=100?t[0]:km<=500?t[1]:km<=1200?t[2]:t[3];return c*MARKUP;}
 
+function getNextOfferNum(){
+  try{
+    var current=localStorage.getItem('labo_offer_num');
+    var next=current?parseInt(current)+1:103;
+    localStorage.setItem('labo_offer_num',String(next));
+    return String(next).padStart(4,'0');
+  }catch(e){return'0103';}
+}
+
 function initApp(){
   document.getElementById('oFecha').value=new Date().toISOString().split('T')[0];
+  // Auto-assign offer number if empty
+  var numEl=document.getElementById('oNum');
+  if(numEl&&!numEl.value) numEl.value=getNextOfferNum();
   buildGrid();
   selModel('MAD_S');
   try{const saved=localStorage.getItem('labo_sheets_url');if(saved){const el=document.getElementById('sheetsUrl');if(el)el.value=saved;}}catch(e){}
@@ -1301,8 +1323,8 @@ function _buildOfferPDF(){
   });
   yR+=3;
 
-  // Opcionales incluidos — aligned with Condiciones Generales
-  yR = yCondiciones;
+  // Opcionales incluidos — start below BINC OR at Condiciones level, whichever is lower
+  yR = Math.max(yR, yCondiciones);
   const opDescPDF=getOpcionalesDesc();
   if(opDescPDF.length>0){
     doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(138,135,127);
@@ -1328,7 +1350,9 @@ function _buildOfferPDF(){
 
   const numPad=String(num||'0').replace(/\D/g,'').padStart(4,'0');
   const clientName=(gv('cNombre')||'Cliente').replace(/[\/\\:*?"<>|]/g,'-').trim();
-  const fileName=`${numPad} ${clientName} - ${sel}.pdf`;
+  const lineaNombre=LINEA[sel]==='madera'?'LABO Madera':'LABO Modular';
+  const modeloNombre='Modelo '+DNAME[sel];
+  const fileName=`${numPad} ${clientName} - ${lineaNombre} ${modeloNombre}.pdf`;
   return doc;
 }
 
@@ -1461,7 +1485,7 @@ async function _initMSAL(){
             // Restore km
             if(st.kmVal){var ki=document.getElementById('kminput');if(ki){ki.value=st.kmVal;onKm(st.kmVal);}}
             // Restore client data
-            var fields=['cNombre','cContacto','cEmail','cTel','oLugar','oVendedor','oNum','oFecha','oPlazo','oNotas','oValidez'];
+            var fields=['cNombre','cContacto','cEmail','cTel','cTerreno','oLugar','oVendedor','oNum','oFecha','oPlazo','oNotas','oValidez'];
             fields.forEach(function(f){var el=document.getElementById(f);if(el&&st[f])el.value=st[f];});
             if(st.cant){var ce=document.getElementById('cant');if(ce)ce.value=st.cant;}
             if(st.oPago){var pe=document.getElementById('oPago');if(pe)pe.value=st.oPago;}
@@ -1561,7 +1585,7 @@ function saveLead(){
       id:'lead_'+Date.now(),
       fecha:new Date().toISOString(),
       num:gv('oNum'),cliente:gv('cNombre'),contacto:gv('cContacto'),
-      email:gv('cEmail'),tel:gv('cTel'),vendedor:gv('oVendedor'),lugar:gv('oLugar'),
+      email:gv('cEmail'),tel:gv('cTel'),terreno:gv('cTerreno'),vendedor:gv('oVendedor'),lugar:gv('oLugar'),
       linea:LINEA[sel]==='madera'?'LABO Madera':'LABO Modular',
       modelo:DNAME[sel],sup:COSTOS[sel].sup,cant:cant,total:tot,
       pago:document.getElementById('oPago').value,plazo:gv('oPlazo'),
