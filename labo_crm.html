@@ -530,6 +530,12 @@ async function loadData(){
 function saveAllLeads(){writeLeads(allLeads).catch(e=>console.warn(e));}
 
 // ── Temperature score ─────────────────────────────────────────────────────────
+function _terrenoScore(l){
+  if(l.terreno==='Sí, posee terreno')return 25;
+  if(l.terreno==='En búsqueda de terreno')return 10;
+  if(l.terreno==='No posee terreno')return-10;
+  return 0; // sin especificar: neutro
+}
 function getTemp(l){
   if(!ACTIVAS.includes(l.etapa))return null;
   let score=0;
@@ -547,6 +553,8 @@ function getTemp(l){
   else if(dias<=7)score+=20;
   else if(dias<=14)score+=10;
   else score-=20;
+  // Terreno
+  score+=_terrenoScore(l);
   if(score>=60)return'caliente';
   if(score>=30)return'tibio';
   return'frio';
@@ -559,6 +567,7 @@ function getTempScore(l){
   if(l.total>150000)s+=30;else if(l.total>80000)s+=20;else if(l.total>40000)s+=10;
   const d=diasDesde(l);
   if(d<=3)s+=30;else if(d<=7)s+=20;else if(d<=14)s+=10;else s-=20;
+  s+=_terrenoScore(l);
   return s;
 }
 
@@ -894,6 +903,7 @@ function openDetail(id){
       field('Nombre',l.contacto)+
       field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'-')+'</a>')+
       field('Teléfono',l.tel)+
+      (l.terreno?field('Terreno',l.terreno):'')+
     '</div></div>'+
     (l.motivoPerdida?'<div class="dp-section"><div class="dp-section-title">Motivo de pérdida</div><div style="font-size:13px;font-weight:600;color:var(--red)">'+esc(l.motivoPerdida)+'</div></div>':'')+
     (l.notas?'<div class="dp-section"><div class="dp-section-title">Notas</div><div style="font-size:13px;line-height:1.5;color:#444">'+esc(l.notas)+'</div></div>':'')+
