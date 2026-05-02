@@ -65,6 +65,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--
 .kpi.dark .kpi-sub{color:rgba(255,255,255,.3)}
 .kpi-explain{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;color:var(--mid);margin-bottom:4px;line-height:1.4}
 .kpi.dark .kpi-explain{color:rgba(255,255,255,.3)}
+.kpi.clickable{cursor:pointer;transition:opacity .15s}
+.kpi.clickable:hover{opacity:.85}
 .kpi.green .kpi-explain{color:#1a6035}
 .kpi.amber .kpi-explain{color:#7D6608}
 .kpi.red .kpi-explain{color:#7a1f1a}
@@ -295,21 +297,21 @@ tr:hover td{background:#F5F3ED}
   <div class="content">
     <!-- KPIs fila 1 -->
     <div class="kpi-grid">
-      <div class="kpi dark"><div class="kpi-label">Pipeline activo</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-explain">Cotizado + En negociación</div>
+      <div class="kpi dark clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline activo</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-explain">Cotizado + En negociación</div>
         <div class="kpi-sub" id="kpi-pipeline-sub">—</div></div>
-      <div class="kpi green"><div class="kpi-label">Cerrado ganado</div><div class="kpi-value" id="kpi-ganado">USD 0</div><div class="kpi-explain">Total cerrado ganado</div>
+      <div class="kpi green clickable" onclick="setKpiFilter('ganado')" title="Click para filtrar tabla"><div class="kpi-label">Cerrado ganado</div><div class="kpi-value" id="kpi-ganado">USD 0</div><div class="kpi-explain">Total cerrado ganado</div>
         <div class="kpi-sub" id="kpi-ganado-sub">—</div></div>
-      <div class="kpi"><div class="kpi-label">Tasa de conversión</div><div class="kpi-value" id="kpi-conv">0%</div><div class="kpi-explain">Ganados ÷ total cerrado</div>
+      <div class="kpi clickable" onclick="setKpiFilter('cerrados')" title="Click para filtrar tabla"><div class="kpi-label">Tasa de conversión</div><div class="kpi-value" id="kpi-conv">0%</div><div class="kpi-explain">Ganados ÷ total cerrado</div>
         <div class="kpi-sub" id="kpi-conv-sub">ganado / cerrado</div></div>
-      <div class="kpi"><div class="kpi-label">Pipeline ponderado</div><div class="kpi-value" id="kpi-ponderado">USD 0</div><div class="kpi-sub">prob. esperada</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline ponderado</div><div class="kpi-value" id="kpi-ponderado">USD 0</div><div class="kpi-explain">Cotizado ×20% + Negociación ×60%</div><div class="kpi-sub">prob. esperada</div></div>
     </div>
     <!-- KPIs fila 2 -->
     <div class="kpi-grid" style="margin-bottom:20px">
-      <div class="kpi"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="kpi-ticket">USD 0</div><div class="kpi-sub">pipeline activo</div></div>
-      <div class="kpi amber"><div class="kpi-label">Leads sin acción</div><div class="kpi-value" id="kpi-frios">0</div><div class="kpi-sub">+14 días sin actividad</div></div>
-      <div class="kpi"><div class="kpi-label">Forecast mes</div><div class="kpi-value" id="kpi-forecast">USD 0</div><div class="kpi-explain">Ganado este mes + 30% ponderado</div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="kpi-ticket">USD 0</div><div class="kpi-sub">pipeline activo</div></div>
+      <div class="kpi amber clickable" onclick="setKpiFilter('frios')" title="Click para filtrar tabla"><div class="kpi-label">Leads sin acción</div><div class="kpi-value" id="kpi-frios">0</div><div class="kpi-sub">+14 días sin actividad</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Forecast mes</div><div class="kpi-value" id="kpi-forecast">USD 0</div><div class="kpi-explain">Ganado este mes + 30% ponderado</div>
         <div class="kpi-sub" id="kpi-forecast-sub">—</div></div>
-      <div class="kpi"><div class="kpi-label">Nuevas este mes</div><div class="kpi-value" id="kpi-nuevas">0</div><div class="kpi-sub">cotizaciones</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('nuevas')" title="Click para filtrar tabla"><div class="kpi-label">Nuevas este mes</div><div class="kpi-value" id="kpi-nuevas">0</div><div class="kpi-sub">cotizaciones</div></div>
     </div>
     <!-- Pipeline bar -->
     <div class="pipeline-bar" id="pipeline-bar"></div>
@@ -587,9 +589,19 @@ function render(){
 function getFiltered(){
   let leads=[...allLeads];
   if(activeFilter!=='all'){
-    const[field,val]=activeFilter.split(':');
-    if(field==='temp') leads=leads.filter(l=>getTemp(l)===val);
-    else leads=leads.filter(l=>l[field]===val);
+    if(activeFilter.startsWith('_kpi:')){
+      const ktype=activeFilter.split(':')[1];
+      const now=new Date();
+      if(ktype==='activos') leads=leads.filter(l=>ACTIVAS.includes(l.etapa));
+      else if(ktype==='ganado') leads=leads.filter(l=>l.etapa==='Cerrado ganado');
+      else if(ktype==='cerrados') leads=leads.filter(l=>l.etapa==='Cerrado ganado'||l.etapa==='Cerrado perdido');
+      else if(ktype==='frios') leads=leads.filter(l=>ACTIVAS.includes(l.etapa)&&diasDesde(l)>14);
+      else if(ktype==='nuevas') leads=leads.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+    } else {
+      const[field,val]=activeFilter.split(':');
+      if(field==='temp') leads=leads.filter(l=>getTemp(l)===val);
+      else leads=leads.filter(l=>l[field]===val);
+    }
   }
   if(searchVal){
     const q=searchVal.toLowerCase();
@@ -618,11 +630,14 @@ function updateCounts(){
 }
 
 function updateKPIs(){
-  // Use filtered leads when a filter is active, allLeads otherwise
-  const base = activeFilter==='all' ? allLeads : getFiltered();
-  const activas=base.filter(l=>ACTIVAS.includes(l.etapa));
-  const ganadas=base.filter(l=>l.etapa==='Cerrado ganado');
-  const perdidas=base.filter(l=>l.etapa==='Cerrado perdido');
+  // Single pass over leads for performance
+  const base = activeFilter==='all'||activeFilter.startsWith('_kpi:') ? allLeads : getFiltered();
+  const activas=[],ganadas=[],perdidas=[];
+  base.forEach(l=>{
+    if(ACTIVAS.includes(l.etapa))activas.push(l);
+    else if(l.etapa==='Cerrado ganado')ganadas.push(l);
+    else if(l.etapa==='Cerrado perdido')perdidas.push(l);
+  });
   const pTot=activas.reduce((s,l)=>s+l.total,0);
   const gTot=ganadas.reduce((s,l)=>s+l.total,0);
   const cerradas=ganadas.length+perdidas.length;
@@ -1018,6 +1033,18 @@ function fmtK(n){return n>=1000000?Math.round(n/1000)+'K':n>=1000?Math.round(n/1
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 document.addEventListener('click',function(e){if(!e.target.closest('.etapa-dropdown'))document.querySelectorAll('.etapa-dropdown.open').forEach(d=>d.classList.remove('open'));});
+
+// ── KPI click filters ─────────────────────────────────────────────────────────
+function setKpiFilter(type){
+  activeFilter='_kpi:'+type;
+  document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('active'));
+  renderTable();
+  updateKPIs();
+  setTimeout(function(){
+    var tw=document.getElementById('table-container');
+    if(tw)tw.scrollIntoView({behavior:'smooth',block:'start'});
+  },150);
+}
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',loadData);}else{loadData();}
 setInterval(loadData,30000);

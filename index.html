@@ -842,10 +842,16 @@ function calcMontaje(m,km){if(!km||km<1)return 0;const t=COSTOS_MONTAJE[m];const
 
 function getNextOfferNum(){
   try{
+    // Check if we already assigned a number this session
+    var sessionNum=sessionStorage.getItem('labo_session_offer_num');
+    if(sessionNum)return sessionNum;
+    // Get last used number and increment
     var current=localStorage.getItem('labo_offer_num');
     var next=current?parseInt(current)+1:103;
     localStorage.setItem('labo_offer_num',String(next));
-    return String(next).padStart(4,'0');
+    var formatted=String(next).padStart(4,'0');
+    sessionStorage.setItem('labo_session_offer_num',formatted);
+    return formatted;
   }catch(e){return'0103';}
 }
 
