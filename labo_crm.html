@@ -63,6 +63,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--
 .kpi.red .kpi-value{color:var(--red)}
 .kpi-sub{font-size:11px;color:var(--mid);margin-top:5px}
 .kpi.dark .kpi-sub{color:rgba(255,255,255,.3)}
+.kpi-explain{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;color:var(--mid);margin-bottom:4px;line-height:1.4}
+.kpi.dark .kpi-explain{color:rgba(255,255,255,.3)}
+.kpi.green .kpi-explain{color:#1a6035}
+.kpi.amber .kpi-explain{color:#7D6608}
+.kpi.red .kpi-explain{color:#7a1f1a}
 
 /* ── SECTION TITLE ── */
 .sec-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -269,7 +274,6 @@ tr:hover td{background:#F5F3ED}
     <div class="s-section">
       <div class="s-label">Etapa</div>
       <div class="s-item" onclick="setFilter('etapa:Cotizado',this)">Cotizado <span class="s-count" id="cnt-cotizado">0</span></div>
-      <div class="s-item" onclick="setFilter('etapa:Propuesta enviada',this)">Propuesta enviada <span class="s-count" id="cnt-propuesta">0</span></div>
       <div class="s-item" onclick="setFilter('etapa:En negociación',this)">En negociación <span class="s-count" id="cnt-negociacion">0</span></div>
       <div class="s-item" onclick="setFilter('etapa:Cerrado ganado',this)">Cerrado ganado <span class="s-count" id="cnt-ganado">0</span></div>
       <div class="s-item" onclick="setFilter('etapa:Cerrado perdido',this)">Cerrado perdido <span class="s-count" id="cnt-perdido">0</span></div>
@@ -291,16 +295,20 @@ tr:hover td{background:#F5F3ED}
   <div class="content">
     <!-- KPIs fila 1 -->
     <div class="kpi-grid">
-      <div class="kpi dark"><div class="kpi-label">Pipeline activo</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-sub" id="kpi-pipeline-sub">—</div></div>
-      <div class="kpi green"><div class="kpi-label">Cerrado ganado</div><div class="kpi-value" id="kpi-ganado">USD 0</div><div class="kpi-sub" id="kpi-ganado-sub">—</div></div>
-      <div class="kpi"><div class="kpi-label">Tasa de conversión</div><div class="kpi-value" id="kpi-conv">0%</div><div class="kpi-sub" id="kpi-conv-sub">ganado / cerrado</div></div>
+      <div class="kpi dark"><div class="kpi-label">Pipeline activo</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-explain">Cotizado + En negociación</div>
+        <div class="kpi-sub" id="kpi-pipeline-sub">—</div></div>
+      <div class="kpi green"><div class="kpi-label">Cerrado ganado</div><div class="kpi-value" id="kpi-ganado">USD 0</div><div class="kpi-explain">Total cerrado ganado</div>
+        <div class="kpi-sub" id="kpi-ganado-sub">—</div></div>
+      <div class="kpi"><div class="kpi-label">Tasa de conversión</div><div class="kpi-value" id="kpi-conv">0%</div><div class="kpi-explain">Ganados ÷ total cerrado</div>
+        <div class="kpi-sub" id="kpi-conv-sub">ganado / cerrado</div></div>
       <div class="kpi"><div class="kpi-label">Pipeline ponderado</div><div class="kpi-value" id="kpi-ponderado">USD 0</div><div class="kpi-sub">prob. esperada</div></div>
     </div>
     <!-- KPIs fila 2 -->
     <div class="kpi-grid" style="margin-bottom:20px">
       <div class="kpi"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="kpi-ticket">USD 0</div><div class="kpi-sub">pipeline activo</div></div>
       <div class="kpi amber"><div class="kpi-label">Leads sin acción</div><div class="kpi-value" id="kpi-frios">0</div><div class="kpi-sub">+14 días sin actividad</div></div>
-      <div class="kpi"><div class="kpi-label">Forecast mes</div><div class="kpi-value" id="kpi-forecast">USD 0</div><div class="kpi-sub" id="kpi-forecast-sub">—</div></div>
+      <div class="kpi"><div class="kpi-label">Forecast mes</div><div class="kpi-value" id="kpi-forecast">USD 0</div><div class="kpi-explain">Ganado este mes + 30% ponderado</div>
+        <div class="kpi-sub" id="kpi-forecast-sub">—</div></div>
       <div class="kpi"><div class="kpi-label">Nuevas este mes</div><div class="kpi-value" id="kpi-nuevas">0</div><div class="kpi-sub">cotizaciones</div></div>
     </div>
     <!-- Pipeline bar -->
@@ -505,15 +513,14 @@ async function writeLeads(leads){
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ETAPAS=[
-  {key:'Cotizado',       cls:'e-cotizado',   color:'#1A5276', prob:0.10},
-  {key:'Propuesta enviada',cls:'e-propuesta',color:'#D4870A', prob:0.30},
+  {key:'Cotizado',       cls:'e-cotizado',   color:'#1A5276', prob:0.20},
   {key:'En negociación', cls:'e-negociacion',color:'#7D3C98', prob:0.60},
   {key:'Cerrado ganado', cls:'e-ganado',     color:'#1E8449', prob:1.00},
   {key:'Cerrado perdido',cls:'e-perdido',    color:'#C0392B', prob:0.00},
 ];
 const ETAPA_CLS=Object.fromEntries(ETAPAS.map(e=>[e.key,e.cls]));
 const ETAPA_PROB=Object.fromEntries(ETAPAS.map(e=>[e.key,e.prob]));
-const ACTIVAS=['Cotizado','Propuesta enviada','En negociación'];
+const ACTIVAS=['Cotizado','En negociación'];
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let allLeads=[], activeFilter='all', sortCol='fecha', sortAsc=false, searchVal='';
@@ -600,7 +607,6 @@ function updateCounts(){
   document.getElementById('cnt-all').textContent=allLeads.length;
   ETAPAS.forEach(e=>{ const el=document.getElementById('cnt-'+e.key.split(' ')[0].toLowerCase()); if(el)el.textContent=allLeads.filter(l=>l.etapa===e.key).length; });
   document.getElementById('cnt-cotizado').textContent=allLeads.filter(l=>l.etapa==='Cotizado').length;
-  document.getElementById('cnt-propuesta').textContent=allLeads.filter(l=>l.etapa==='Propuesta enviada').length;
   document.getElementById('cnt-negociacion').textContent=allLeads.filter(l=>l.etapa==='En negociación').length;
   document.getElementById('cnt-ganado').textContent=allLeads.filter(l=>l.etapa==='Cerrado ganado').length;
   document.getElementById('cnt-perdido').textContent=allLeads.filter(l=>l.etapa==='Cerrado perdido').length;
@@ -612,9 +618,11 @@ function updateCounts(){
 }
 
 function updateKPIs(){
-  const activas=allLeads.filter(l=>ACTIVAS.includes(l.etapa));
-  const ganadas=allLeads.filter(l=>l.etapa==='Cerrado ganado');
-  const perdidas=allLeads.filter(l=>l.etapa==='Cerrado perdido');
+  // Use filtered leads when a filter is active, allLeads otherwise
+  const base = activeFilter==='all' ? allLeads : getFiltered();
+  const activas=base.filter(l=>ACTIVAS.includes(l.etapa));
+  const ganadas=base.filter(l=>l.etapa==='Cerrado ganado');
+  const perdidas=base.filter(l=>l.etapa==='Cerrado perdido');
   const pTot=activas.reduce((s,l)=>s+l.total,0);
   const gTot=ganadas.reduce((s,l)=>s+l.total,0);
   const cerradas=ganadas.length+perdidas.length;
@@ -623,21 +631,21 @@ function updateKPIs(){
   const ponderado=activas.reduce((s,l)=>s+l.total*(ETAPA_PROB[l.etapa]||0),0);
   const frios=activas.filter(l=>diasDesde(l)>14).length;
   const now=new Date();
-  const nuevas=allLeads.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
-  // Forecast: ganado este mes + ponderado activas
+  const nuevas=base.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
   const ganadoMes=ganadas.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,l)=>s+l.total,0);
-
+  // Show filter context in pipeline sub
+  const filterLabel=activeFilter==='all'?'':' (filtrado)';
   document.getElementById('kpi-pipeline').textContent='USD '+fmt(pTot);
-  document.getElementById('kpi-pipeline-sub').textContent=activas.length+' leads activos';
+  document.getElementById('kpi-pipeline-sub').textContent=activas.length+' leads activos'+filterLabel;
   document.getElementById('kpi-ganado').textContent='USD '+fmt(gTot);
-  document.getElementById('kpi-ganado-sub').textContent=ganadas.length+' operaciones';
+  document.getElementById('kpi-ganado-sub').textContent=ganadas.length+' operaciones'+filterLabel;
   document.getElementById('kpi-conv').textContent=conv+'%';
-  document.getElementById('kpi-conv-sub').textContent='de '+cerradas+' cerradas';
+  document.getElementById('kpi-conv-sub').textContent='de '+cerradas+' cerradas'+filterLabel;
   document.getElementById('kpi-ponderado').textContent='USD '+fmt(ponderado);
   document.getElementById('kpi-ticket').textContent='USD '+fmt(ticket);
   document.getElementById('kpi-frios').textContent=frios;
   document.getElementById('kpi-forecast').textContent='USD '+fmt(ganadoMes+ponderado*0.3);
-  document.getElementById('kpi-forecast-sub').textContent='ganado + 30% ponderado';
+  document.getElementById('kpi-forecast-sub').textContent='ganado + 30% ponderado'+filterLabel;
   document.getElementById('kpi-nuevas').textContent=nuevas;
 }
 
