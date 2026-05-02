@@ -848,26 +848,40 @@ let sel=null,opts={},kmVal=null;
 function calcLog(m,km){if(!km||km<100)return 0;const t=COSTOS_LOG_TARIFA[m]||0;if(!t)return 0;return t*km*(km>=101?0.7:1)*MARKUP;}
 function calcMontaje(m,km){if(!km||km<1)return 0;const t=COSTOS_MONTAJE[m];const c=km<=100?t[0]:km<=500?t[1]:km<=1200?t[2]:t[3];return c*MARKUP;}
 
-function getNextOfferNum(){
+async function getNextOfferNum(){
+  // Read counter from SharePoint, increment and save
   try{
-    // Check if we already assigned a number this session
-    var sessionNum=sessionStorage.getItem('labo_session_offer_num');
-    if(sessionNum)return sessionNum;
-    // Get last used number and increment
-    var current=localStorage.getItem('labo_offer_num');
-    var next=current?parseInt(current)+1:103;
+    await _initMSAL();
+    await _getSiteDrive();
+    var counterFile=MSAL_CONFIG.dataFolder+'/labo_offer_counter.json';
+    var res=await _gFetch('/drives/'+_driveId+'/root:/'+counterFile+':/content');
+    var current=103;
+    if(res.ok){
+      var data=JSON.parse(await res.text());
+      current=data.last||103;
+    }
+    var next=current+1;
+    await _gFetch('/drives/'+_driveId+'/root:/'+counterFile+':/content',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({last:next,updated:new Date().toISOString()})
+    });
+    return String(next).padStart(4,'0');
+  }catch(e){
+    console.warn('SP counter failed, using local:',e);
+    // Fallback to localStorage
+    var current=parseInt(localStorage.getItem('labo_offer_num')||'103');
+    var next=current+1;
     localStorage.setItem('labo_offer_num',String(next));
-    var formatted=String(next).padStart(4,'0');
-    sessionStorage.setItem('labo_session_offer_num',formatted);
-    return formatted;
-  }catch(e){return'0103';}
+    return String(next).padStart(4,'0');
+  }
 }
 
 function initApp(){
   document.getElementById('oFecha').value=new Date().toISOString().split('T')[0];
-  // Auto-assign offer number if empty
+  // N° de oferta se asigna al generar el PDF, no al cargar
   var numEl=document.getElementById('oNum');
-  if(numEl&&!numEl.value) numEl.value=getNextOfferNum();
+  if(numEl) numEl.value='— se asigna al generar PDF —';
   buildGrid();
   selModel('MAD_S');
   try{const saved=localStorage.getItem('labo_sheets_url');if(saved){const el=document.getElementById('sheetsUrl');if(el)el.value=saved;}}catch(e){}
@@ -980,6 +994,11 @@ function goStep(n){
     setTimeout(()=>mg.style.outline='',2000);
     return;
   }
+  // Reset offer number when going back to step 1 — new cotización = new number at PDF time
+  if(n===1){
+    var numEl=document.getElementById('oNum');
+    if(numEl) numEl.value='— se asigna al generar PDF —';
+  }
   document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i+1===n));
   document.querySelectorAll('.nbtn').forEach((b,i)=>{b.classList.remove('active','done');if(i+1===n)b.classList.add('active');else if(i+1<n&&n<4)b.classList.add('done');});
   document.getElementById('stepLabel').textContent=n<4?`PASO ${n} / 3`:'COSTOS';
@@ -1065,7 +1084,13 @@ function generatePDF(){
   if(typeof window.jspdf==='undefined'){alert('El generador de PDF está cargando. Intentá de nuevo.');return;}
   _doGeneratePDF();
 }
-function _doGeneratePDF(){
+async function _doGeneratePDF(){
+  // Assign offer number NOW — at PDF generation, not before
+  var numEl=document.getElementById('oNum');
+  if(!numEl.value||numEl.value.includes('—')){
+    numEl.value='…';
+    numEl.value=await getNextOfferNum();
+  }
   var doc=_buildOfferPDF();
   var linea=LINEA[sel];
   var catalogKey=DNAME[sel];
@@ -1075,7 +1100,6 @@ function _doGeneratePDF(){
   if(hasCatalog&&typeof PDFLib!=='undefined'){
     _mergePDFs(doc,linea,catalogKey);
   } else {
-    // No catalog or PDFLib not loaded — download offer only
     var numPad=(gv('oNum')||'SN').replace(/[\\/\/:*?"<>|]/g,'-').trim();
     var clientName=(gv('cNombre')||'Cliente').replace(/[\\/\/:*?"<>|]/g,'-').trim();
     doc.save(numPad+' '+clientName+' - '+DNAME[sel]+'.pdf');
