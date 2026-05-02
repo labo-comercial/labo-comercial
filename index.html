@@ -664,7 +664,15 @@
         <div class="fg"><label>Validez (días)</label><input type="number" id="oValidez" value="30" min="1"></div>
       </div>
       <div class="frow">
-        <div class="fg"><label>Vendedor / Comercial</label><input type="text" id="oVendedor" placeholder="Nombre del responsable"></div>
+        <div class="fg"><label>Vendedor / Comercial</label>
+          <select id="oVendedor">
+            <option value="">— Seleccioná vendedor —</option>
+            <option value="Pablo Spinetto">Pablo Spinetto</option>
+            <option value="Leandro Seoane">Leandro Seoane</option>
+            <option value="Hector Bermudez">Hector Bermudez</option>
+            <option value="Victoria Lopez Aybar">Victoria Lopez Aybar</option>
+          </select>
+        </div>
         <div class="fg"><label>Lugar de entrega / Proyecto</label><input type="text" id="oLugar" placeholder="Ciudad, provincia"></div>
       </div>
     </div>
@@ -1491,8 +1499,10 @@ async function _initMSAL(){
             // Restore km
             if(st.kmVal){var ki=document.getElementById('kminput');if(ki){ki.value=st.kmVal;onKm(st.kmVal);}}
             // Restore client data
-            var fields=['cNombre','cContacto','cEmail','cTel','cTerreno','oLugar','oVendedor','oNum','oFecha','oPlazo','oNotas','oValidez'];
+            var fields=['cNombre','cContacto','cEmail','cTel','cTerreno','oLugar','oNum','oFecha','oPlazo','oNotas','oValidez'];
             fields.forEach(function(f){var el=document.getElementById(f);if(el&&st[f])el.value=st[f];});
+            // Handle selects separately
+            if(st.oVendedor){var ve=document.getElementById('oVendedor');if(ve)ve.value=st.oVendedor;}
             if(st.cant){var ce=document.getElementById('cant');if(ce)ce.value=st.cant;}
             if(st.oPago){var pe=document.getElementById('oPago');if(pe)pe.value=st.oPago;}
           }

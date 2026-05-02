@@ -581,9 +581,17 @@ function getTempScore(l){
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
-function render(){
+function renderFast(){
+  // Only update what's visible in Pipeline tab — instant
   updateCounts();updateKPIs();updatePipelineBar();renderTable();
-  renderFunnel();renderCharts();renderVelocity();renderUrgentes();renderRanking();renderTrend();renderForecast();renderMotivos();
+}
+function render(){
+  // Full render — all tabs
+  updateCounts();updateKPIs();updatePipelineBar();renderTable();
+  // Defer heavy tabs to next tick so UI responds immediately
+  setTimeout(function(){
+    renderFunnel();renderCharts();renderVelocity();renderUrgentes();renderRanking();renderTrend();renderForecast();renderMotivos();
+  },0);
 }
 
 function getFiltered(){
@@ -998,10 +1006,10 @@ function setFilter(f,el){
   activeFilter=f;
   document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('active'));
   if(el)el.classList.add('active');
-  renderTable();
+  renderFast();
 }
-function filterSearch(v){searchVal=v;renderTable();}
-function setSort(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}renderTable();}
+function filterSearch(v){searchVal=v;renderFast();}
+function setSort(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}renderFast();}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(id,el){
@@ -1038,8 +1046,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.etapa-dropd
 function setKpiFilter(type){
   activeFilter='_kpi:'+type;
   document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('active'));
-  renderTable();
-  updateKPIs();
+  renderFast();
   setTimeout(function(){
     var tw=document.getElementById('table-container');
     if(tw)tw.scrollIntoView({behavior:'smooth',block:'start'});
