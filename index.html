@@ -794,6 +794,7 @@ const BINC_MADERA=[
 const BINC_MODULAR=[
   "Estructura de acero autoportante y muros exteriores con panel sándwich prepintado de 50 mm.",
   "Cubierta de panel sándwich de 50 mm con pometina y plegado perimetral de terminación.",
+  "Piso de mosaico granítico.",
   "Divisiones interiores en placas de jequetibá.",
   "Muros de baño revestidos en cerámica blanca 15 × 15 cm.",
   "Cielorrasos en placas de guatambú.",
@@ -960,7 +961,7 @@ function selModel(k){sel=k;document.querySelectorAll('.mcard').forEach(c=>c.clas
 function getCant(){return parseInt(document.getElementById('cant').value)||1;}
 function buildOpts(k){const d=COSTOS[k];const list=document.getElementById('olist');list.innerHTML='';
 const cant=getCant();
-Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${name}</span></div><span class="oprice" id="pr_${name}">${price===0?'N/D':'USD '+fmt(price*cant)}</span>`;list.appendChild(row);});
+Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;const displayName=getOptLabel(name);row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${displayName}</span></div><span class="oprice" id="pr_${name}">${price===0?'N/D':'USD '+fmt(price*cant)}</span>`;list.appendChild(row);});
 const tarifa=COSTOS_LOG_TARIFA[k];const lrow=document.createElement('div');lrow.className='lrow';lrow.id='lrow';
 lrow.innerHTML=`<div class="lleft"><span class="lname">LOGÍSTICA</span><div class="kmwrap"><label>Distancia</label><input type="number" id="kminput" placeholder="mín. 100" min="100" step="1" oninput="onKm(this.value)" onblur="if(this.value&&parseInt(this.value)<100){this.value=100;onKm(100);}"><span class="kmhint">km</span></div>${tarifa>0?`<span class="kmhint">USD ${fmt(tarifa)}/km · desc. 30% si >100 km</span>`:'<span class="kmhint" style="color:var(--red)">⚠ tarifa no configurada → ⚙ Actualizar Costos</span>'}</div><span class="oprice" id="lprice">—</span>`;list.appendChild(lrow);
 const hasMontaje=COSTOS_MONTAJE[k].some(v=>v>0);const mrow=document.createElement('div');mrow.className='orow'+(hasMontaje?'':' na');mrow.id='or_Montaje';
@@ -970,7 +971,18 @@ function togOpt(name,v){opts[name]=v;const row=document.getElementById('or_'+nam
 
 function onKm(v){var raw=parseInt(v);if(raw>0&&raw<100){var inp=document.getElementById('kminput');if(inp){inp.style.borderColor='var(--red)';}kmVal=null;}else{var inp2=document.getElementById('kminput');if(inp2)inp2.style.borderColor='';kmVal=(!v||v===''||isNaN(raw)||raw<100)?null:raw;}const cant=getCant();const lp=kmVal?calcLog(sel,kmVal):0;const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;document.getElementById('lprice').textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';document.getElementById('pr_Montaje').textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmt(mp*cant):'—';upd();}
 
-function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0)items.push({label:n,precio:d.op[n]});});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:`Logística (${kmVal} km)`,precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:`Montaje (${kmVal} km)`,precio:mp});}return items;}
+// Display labels for opcionales — differ by line
+const OPT_LABELS_MADERA={
+  "Platea de fundación + Granítico":"Platea de fundación (Madera) o Vigas cintas (Modular) + Granítico (Madera)",
+};
+const OPT_LABELS_MODULAR={
+  "Platea de fundación + Granítico":"Platea de fundación (Madera) o Vigas cintas (Modular) + Granítico (Madera)",
+};
+function getOptLabel(name){
+  const map=LINEA[sel]==='madera'?OPT_LABELS_MADERA:OPT_LABELS_MODULAR;
+  return map[name]||name;
+}
+function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0)items.push({label:getOptLabel(n),precio:d.op[n]});});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:`Logística (${kmVal} km)`,precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:`Montaje (${kmVal} km)`,precio:mp});}return items;}
 
 function refreshOptPrices(){
   if(!sel)return;
@@ -1056,7 +1068,7 @@ document.getElementById('pvw').innerHTML=`
   <thead><tr><th>Concepto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit. (USD)</th><th style="text-align:right">Subtotal (USD)</th></tr></thead>
   <tbody>${rows}<tr class="otrow"><td colspan="3"><strong>TOTAL OFERTA</strong></td><td style="font-family:'IBM Plex Mono',monospace"><strong>USD ${fmt(totO)}</strong></td></tr></tbody>
 </table>
-<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;letter-spacing:1px">* Valores en USD. No incluyen IVA (21%).</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;letter-spacing:1px">* Valores en USD. No incluyen IVA.</div>
 <div class="ostitle">2. El precio base incluye</div>
 <div class="igrid">${inc}</div>
 ${incOpts?`<div class="ostitle">3. Opcionales incluidos</div><div class="igrid">${incOpts}</div>`:''}
@@ -1305,7 +1317,7 @@ function _buildOfferPDF(){
   yL+=6.5;
 
   doc.setFont('helvetica','italic');doc.setFontSize(5.5);doc.setTextColor(138,135,127);
-  doc.text('* Valores en USD. No incluyen IVA (21%).',colL_x,yL+3.5);
+  doc.text('* Valores en USD. No incluyen IVA.',colL_x,yL+3.5);
   yL+=8;
 
   // Condiciones
