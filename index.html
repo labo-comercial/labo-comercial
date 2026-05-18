@@ -978,11 +978,22 @@ const OPT_LABELS_MADERA={
 const OPT_LABELS_MODULAR={
   "Platea de fundación + Granítico":"Platea de fundación (Madera) o Vigas cintas (Modular) + Granítico (Madera)",
 };
+// PDF labels — shorter, line-specific
+const OPT_LABELS_PDF_MADERA={
+  "Platea de fundación + Granítico":"Platea de fundación + granítico",
+};
+const OPT_LABELS_PDF_MODULAR={
+  "Platea de fundación + Granítico":"Vigas cintas de fundación",
+};
 function getOptLabel(name){
   const map=LINEA[sel]==='madera'?OPT_LABELS_MADERA:OPT_LABELS_MODULAR;
   return map[name]||name;
 }
-function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0)items.push({label:getOptLabel(n),precio:d.op[n]});});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:`Logística (${kmVal} km)`,precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:`Montaje (${kmVal} km)`,precio:mp});}return items;}
+function getOptLabelPDF(name){
+  const map=LINEA[sel]==='madera'?OPT_LABELS_PDF_MADERA:OPT_LABELS_PDF_MODULAR;
+  return map[name]||name;
+}
+function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0)items.push({label:getOptLabel(n),pdfLabel:getOptLabelPDF(n),precio:d.op[n]});});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:'Logística',pdfLabel:'Logística',precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:'Montaje',pdfLabel:'Montaje',precio:mp});}return items;}
 
 function refreshOptPrices(){
   if(!sel)return;
@@ -1302,7 +1313,7 @@ function _buildOfferPDF(){
     const rh=4.5;
     if(idx%2===0){doc.setFillColor(248,247,244);doc.rect(colL_x,yL,colL_w,rh,'F');}
     doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(10,10,10);
-    [it.label,String(cant),`USD ${fmt(it.precio)}`,`USD ${fmt(it.precio*cant)}`].forEach((v,i)=>{
+    [(it.pdfLabel||it.label),String(cant),`USD ${fmt(it.precio)}`,`USD ${fmt(it.precio*cant)}`].forEach((v,i)=>{
       const cx=colL_x+colsL.slice(0,i).reduce((a,b)=>a+b,0);
       i===0?doc.text(v.substring(0,48),cx+2,yL+3.2):doc.text(v,cx+colsL[i]-2,yL+3.2,{align:'right'});
     });
