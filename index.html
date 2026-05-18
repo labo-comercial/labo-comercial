@@ -844,7 +844,7 @@ function getOpcionalesDesc(){
     if(d)result.push(d);
   });
   // Logística siempre si hay km
-  if(kmVal&&kmVal>=100)result.push('Logística y transporte, calculados según kilometraje ('+kmVal+' km).');
+  if(kmVal&&kmVal>=100)result.push('Logística y transporte, calculados según distancia al destino.');
   return result;
 }
 let sel=null,opts={},kmVal=null;
