@@ -611,9 +611,10 @@ function getTemp(l){
   else if(l.etapa==='Propuesta enviada')score+=20;
   else score+=5;
   // Valor weight
-  if(l.total>150000)score+=30;
-  else if(l.total>80000)score+=20;
-  else if(l.total>40000)score+=10;
+  const tv=l.totalPipeline||l.total||0;
+  if(tv>150000)score+=30;
+  else if(tv>80000)score+=20;
+  else if(tv>40000)score+=10;
   // Actividad reciente
   const dias=diasDesde(l);
   if(dias<=3)score+=30;
@@ -631,7 +632,8 @@ function getTempScore(l){
   if(l.etapa==='En negociación')s+=40;
   else if(l.etapa==='Propuesta enviada')s+=20;
   else s+=5;
-  if(l.total>150000)s+=30;else if(l.total>80000)s+=20;else if(l.total>40000)s+=10;
+  const tv2=l.totalPipeline||l.total||0;
+  if(tv2>150000)s+=30;else if(tv2>80000)s+=20;else if(tv2>40000)s+=10;
   const d=diasDesde(l);
   if(d<=3)s+=30;else if(d<=7)s+=20;else if(d<=14)s+=10;else s-=20;
   s+=_terrenoScore(l);
@@ -815,7 +817,7 @@ function renderFunnel(){
   let html='';
   activas.forEach((e,i)=>{
     const n=allLeads.filter(l=>l.etapa===e.key).length;
-    const val=allLeads.filter(l=>l.etapa===e.key).reduce((s,l)=>s+l.total,0);
+    const val=allLeads.filter(l=>l.etapa===e.key).reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
     const pct=Math.max(n/Math.max(allLeads.length,1)*100,2);
     const conv=i>0?Math.round(n/Math.max(allLeads.filter(l=>l.etapa===activas[i-1].key).length,1)*100)+'%':'—';
     html+='<div class="funnel-row">'+
@@ -834,7 +836,7 @@ function renderForecast(){
   const stages=ETAPAS.filter(e=>ACTIVAS.includes(e.key));
   row.innerHTML=stages.map(e=>{
     const leads=allLeads.filter(l=>l.etapa===e.key);
-    const val=leads.reduce((s,l)=>s+l.total,0)*e.prob;
+    const val=leads.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0)*e.prob;
     return '<div class="forecast-card">'+
       '<div class="forecast-label">'+e.key+'</div>'+
       '<div class="forecast-val">USD '+fmtK(val)+'</div>'+
@@ -845,19 +847,25 @@ function renderForecast(){
 
 // ── Charts ────────────────────────────────────────────────────────────────────
 function renderCharts(){
-  // Por modelo
+  // Por modelo — iterate cotizaciones for grouped leads
   const byModelo={};
-  allLeads.forEach(l=>{const k=(l.linea||'')+' '+( l.modelo||'');byModelo[k]=(byModelo[k]||0)+l.total;});
+  allLeads.forEach(l=>{
+    const cots=l.cotizaciones||[{linea:l.linea,modelo:l.modelo,total:l.total}];
+    cots.forEach(c=>{const k=(c.linea||l.linea||'')+' '+(c.modelo||l.modelo||'');byModelo[k]=(byModelo[k]||0)+(c.total||0);});
+  });
   renderBarChart('chart-modelo',byModelo,'#1A5276',v=>'USD '+fmtK(v));
 
-  // Por vendedor (cantidad)
+  // Por vendedor (cantidad leads)
   const byVend={};
   allLeads.forEach(l=>{if(l.vendedor)byVend[l.vendedor]=(byVend[l.vendedor]||0)+1;});
   renderBarChart('chart-vendedor',byVend,'#7D3C98',v=>v+' leads');
 
-  // Linea
+  // Por línea — iterate cotizaciones
   const byLinea={};
-  allLeads.forEach(l=>{if(l.linea)byLinea[l.linea]=(byLinea[l.linea]||0)+l.total;});
+  allLeads.forEach(l=>{
+    const cots=l.cotizaciones||[{linea:l.linea,total:l.total}];
+    cots.forEach(c=>{if(c.linea)byLinea[c.linea]=(byLinea[c.linea]||0)+(c.total||0);});
+  });
   renderBarChart('chart-linea',byLinea,'#D4870A',v=>'USD '+fmtK(v));
 
   // Conversión por vendedor
@@ -959,7 +967,7 @@ function renderUrgentes(){
     const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
     return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
       '<td><div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.contacto||'')+'</div></td>'+
-      '<td class="td-mono">USD '+fmt(l.total)+'</td>'+
+      '<td class="td-mono">USD '+fmt(l.totalPipeline||l.total||0)+'</td>'+
       '<td class="td-mono td-hot">'+diasDesde(l)+'d sin actividad</td>'+
       '<td><span class="etapa '+cls+'"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</span></td>'+
       '<td class="td-mono td-muted" style="font-size:11px">'+esc(l.vendedor||'—')+'</td>'+
@@ -979,8 +987,12 @@ function renderRanking(){
     const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
     return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
       '<td class="td-mono" style="width:30px;color:var(--mid)">'+(i+1)+'</td>'+
-      '<td><div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.linea||'')+' Mod. '+esc(l.modelo||'')+'</div></td>'+
-      '<td class="td-mono">USD '+fmt(l.total)+'</td>'+
+      '<td>'+
+        (l.leadNum?'<span class="lead-num">#'+l.leadNum+'</span>':'')+
+        '<div class="td-bold">'+esc(l.cliente||'—')+'</div>'+
+        '<div class="td-muted">'+(l.ultimaCot?esc(l.ultimaCot.linea||'')+' Mod. '+esc(l.ultimaCot.modelo||''):esc(l.linea||'')+' Mod. '+esc(l.modelo||''))+'</div>'+
+      '</td>'+
+      '<td class="td-mono">USD '+fmt(l.totalPipeline||l.total||0)+'</td>'+
       '<td><span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span></td>'+
       '<td><span class="etapa '+cls+'"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</span></td>'+
       '<td class="td-mono td-muted" style="font-size:11px">'+diasDesde(l)+'d</td>'+
