@@ -708,9 +708,9 @@ function updateKPIs(){
   });
   // Pipeline total = sum of all cotizaciones for active leads
   const pTot=activas.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
-  // Última cotización = sum of last cotización per active lead
+  // Última cotización = sum of LAST cotización per active lead (not totalPipeline)
   const ultimaTot=activas.reduce((s,l)=>{
-    const uc=l.ultimaCot?l.ultimaCot.total:(l.total||0);
+    const uc=l.ultimaCot?l.ultimaCot.total:((l.cotizaciones&&l.cotizaciones.length>0)?l.cotizaciones[l.cotizaciones.length-1].total:(l.total||0));
     return s+uc;
   },0);
   const gTot=ganadas.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
