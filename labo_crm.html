@@ -991,84 +991,97 @@ function renderRanking(){
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
 function openDetail(id){
-  const l=allLeads.find(x=>x.id===id);if(!l)return;
+  var l=allLeads.find(function(x){return x.id===id;});
+  if(!l)return;
   currentLeadId=id;
-  document.getElementById('dp-title').textContent=(l.leadNum?'#'+l.leadNum+' — ':'')+( l.cliente||'Lead');
-  const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
-  const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
-  const temp=getTemp(l);
-  const cots=l.cotizaciones||[];
+  document.getElementById('dp-title').textContent=(l.leadNum?'#'+l.leadNum+' \u2014 ':'')+( l.cliente||'Lead');
+  var cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+  var edot=ETAPAS.find(function(e){return e.key===l.etapa;})||ETAPAS[0];
+  var temp=getTemp(l);
+  var cots=l.cotizaciones||[];
 
-  // ── Cotizaciones list ──────────────────────────────────────────────────────
-  const cotsHtml=cots.length>0?
-    '<div class="cot-list">'+cots.map(function(c,i){
-      const d=c.fecha?new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
-      const lbCls=(c.linea||'')===('LABO Madera')?'lb-madera':'lb-modular';
+  // Cotizaciones HTML
+  var cotsHtml='';
+  if(cots.length>0){
+    var cotCards=cots.map(function(c){
+      var d=c.fecha?new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+      var lbCls=(c.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
+      var notasHtml=c.notas&&c.notas!=='—'?'<div class="cot-card-field" style="grid-column:1/-1"><label>Notas</label><span>'+esc(c.notas)+'</span></div>':'';
       return '<div class="cot-card">'+
         '<div class="cot-card-hdr">'+
-          '<span class="cot-card-num">OC N° '+esc(c.num||'—')+'</span>'+
+          '<span class="cot-card-num">OC N\u00b0 '+esc(c.num||'—')+'</span>'+
           '<span class="cot-card-date">'+d+'</span>'+
         '</div>'+
         '<div class="cot-card-body">'+
-          '<div class="cot-card-field"><label>Línea</label><span><span class="lb '+lbCls+'">'+esc(c.linea||'—')+'</span></span></div>'+
-          '<div class="cot-card-field"><label>Modelo</label><span>'+esc(c.modelo||'—')+' ('+esc(String(c.sup||''))+'m²)</span></div>'+
+          '<div class="cot-card-field"><label>L\u00ednea</label><span><span class="lb '+lbCls+'">'+esc(c.linea||'—')+'</span></span></div>'+
+          '<div class="cot-card-field"><label>Modelo</label><span>'+esc(c.modelo||'—')+' ('+esc(String(c.sup||''))+'m\u00b2)</span></div>'+
           '<div class="cot-card-field"><label>Cantidad</label><span>'+esc(String(c.cant||1))+' ud.</span></div>'+
           '<div class="cot-card-field"><label>Cond. pago</label><span>'+esc(c.pago||'—')+'</span></div>'+
           '<div class="cot-card-field"><label>Plazo</label><span>'+esc(c.plazo||'—')+'</span></div>'+
-          (c.notas&&c.notas!=='—'?'<div class="cot-card-field" style="grid-column:1/-1"><label>Notas</label><span>'+esc(c.notas)+'</span></div>':'')+
+          notasHtml+
         '</div>'+
         '<div class="cot-card-total"><span class="cot-card-total-label">Total</span><span class="cot-card-total-val">USD '+fmt(c.total)+'</span></div>'+
       '</div>';
-    }).join('')+
-    (cots.length>1?'<div class="cot-card-total" style="background:#F5F3ED;border:1px solid var(--border)"><span class="cot-card-total-label" style="color:var(--mid)">PIPELINE TOTAL CLIENTE</span><span class="cot-card-total-val" style="color:var(--black)">USD '+fmt(l.totalPipeline||0)+'</span></div>':'')+
-    '</div>':
-    '<div class="td-muted" style="padding:12px;font-size:12px">Sin cotizaciones registradas.</div>';
+    }).join('');
+    var totalRow=cots.length>1?'<div class="cot-card-total" style="background:#F5F3ED;border:1px solid var(--border)"><span class="cot-card-total-label" style="color:var(--mid)">PIPELINE TOTAL CLIENTE</span><span class="cot-card-total-val" style="color:var(--black)">USD '+fmt(l.totalPipeline||0)+'</span></div>':'';
+    cotsHtml='<div class="cot-list">'+cotCards+totalRow+'</div>';
+  }else{
+    cotsHtml='<div class="td-muted" style="padding:12px;font-size:12px">Sin cotizaciones registradas.</div>';
+  }
 
-  // ── Activity timeline ──────────────────────────────────────────────────────
-  const acts=l.actividad||[];
-  const timelineHtml=acts.length>0?
-    '<div class="act-timeline">'+acts.map(function(a){
-      const isEtapa=a.texto&&a.texto.startsWith('Etapa:');
-      const icon=isEtapa?'→':'✎';
+  // Activity timeline HTML
+  var acts=l.actividad||[];
+  var timelineHtml='';
+  if(acts.length>0){
+    var entries=[].concat(acts).reverse().map(function(a){
+      var isEtapa=a.texto&&a.texto.indexOf('Etapa:')===0;
       return '<div class="act-entry">'+
-        '<div class="act-dot '+(isEtapa?'is-etapa':'is-nota')+'">'+icon+'</div>'+
+        '<div class="act-dot '+(isEtapa?'is-etapa':'is-nota')+'">'+(isEtapa?'\u2192':'\u270e')+'</div>'+
         '<div class="act-body">'+
           '<div class="act-fecha-txt">'+esc(a.fecha)+'</div>'+
           '<div class="act-texto-txt">'+esc(a.texto)+'</div>'+
         '</div>'+
       '</div>';
-    }).reverse().join('')+'</div>':
-    '<div class="td-muted" style="padding:8px 0;font-size:12px">Sin actividad registrada aún.</div>';
+    }).join('');
+    timelineHtml='<div class="act-timeline">'+entries+'</div>';
+  }else{
+    timelineHtml='<div class="td-muted" style="padding:8px 0;font-size:12px">Sin actividad registrada a\u00fan.</div>';
+  }
 
-  document.getElementById('dp-body').innerHTML=
-    // Temp + etapa
-    (temp?'<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span></div>':'')+
-    '<div class="dp-section"><div class="dp-section-title">Etapa</div>'+
-      '<div class="etapa-dropdown" id="dp_dd">'+
-        '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD(\'dp_dd\')"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</button>'+
-        '<div class="etapa-menu">'+ETAPAS.map(function(e){return '<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(''+l.id+'',''+e.key+'',true)"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';}).join('')+'</div>'+
-      '</div>'+
-    '</div>'+
-    // Contact
-    '<div class="dp-section"><div class="dp-section-title">Contacto</div><div class="dp-grid">'+
-      field('Nombre',l.contacto||'—')+
-      field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'—')+'</a>')+
-      field('Teléfono',l.tel||'—')+
-      field('Terreno',l.terreno||'—')+
-      field('Vendedor',l.vendedor||'—')+
-      field('Lugar',l.lugar||'—')+
-    '</div></div>'+
-    // Cotizaciones
-    '<div class="dp-section"><div class="dp-section-title">Cotizaciones ('+cots.length+')</div>'+cotsHtml+'</div>'+
-    // Motivo pérdida
-    (l.motivoPerdida?'<div class="dp-section"><div class="dp-section-title">Motivo de pérdida</div><div style="font-size:13px;font-weight:600;color:var(--red)">'+esc(l.motivoPerdida)+'</div></div>':'')+
-    // Activity
-    '<div class="dp-section"><div class="dp-section-title">Registrar actividad</div>'+
-      '<textarea class="nota-input" id="nota-input" placeholder="Llamado, reunión, propuesta enviada..."></textarea>'+
-      '<button class="btn-nota" onclick="addNota()">+ Registrar</button>'+
-    '</div>'+
-    '<div class="dp-section"><div class="dp-section-title">Historial de actividad</div>'+timelineHtml+'</div>';
+  // Build etapa menu
+  var etapaMenuItems=ETAPAS.map(function(e){
+    return '<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(\''+l.id+'\',\''+e.key+'\',true)">'+
+      '<span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';
+  }).join('');
 
+  // Assemble panel
+  var html='';
+  if(temp) html+='<div style="margin-bottom:14px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'\uD83D\uDD25':temp==='tibio'?'\uD83C\uDF24':'\u2744\uFE0F')+' '+temp+'</span></div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Etapa</div>'+
+    '<div class="etapa-dropdown" id="dp_dd_panel">'+
+      '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD(\'dp_dd_panel\')">'+
+        '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
+      '</button>'+
+      '<div class="etapa-menu">'+etapaMenuItems+'</div>'+
+    '</div>'+
+  '</div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Contacto</div><div class="dp-grid">'+
+    field('Nombre',l.contacto||'—')+
+    field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'—')+'</a>')+
+    field('Tel\u00e9fono',l.tel||'—')+
+    field('Terreno',l.terreno||'—')+
+    field('Vendedor',l.vendedor||'—')+
+    field('Lugar',l.lugar||'—')+
+  '</div></div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Cotizaciones ('+cots.length+')</div>'+cotsHtml+'</div>';
+  if(l.motivoPerdida) html+='<div class="dp-section"><div class="dp-section-title">Motivo de p\u00e9rdida</div><div style="font-size:13px;font-weight:600;color:var(--red)">'+esc(l.motivoPerdida)+'</div></div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Registrar actividad</div>'+
+    '<textarea class="nota-input" id="nota-input" placeholder="Llamado, reuni\u00f3n, propuesta enviada..."></textarea>'+
+    '<button class="btn-nota" onclick="addNota()">+ Registrar</button>'+
+  '</div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Historial de actividad</div>'+timelineHtml+'</div>';
+
+  document.getElementById('dp-body').innerHTML=html;
   document.getElementById('detailOverlay').classList.add('open');
 }
 function field(l,v){return '<div class="dp-field"><label>'+l+'</label><span>'+v+'</span></div>';}
