@@ -1045,7 +1045,7 @@ function openDetail(id){
     (temp?'<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span></div>':'')+
     '<div class="dp-section"><div class="dp-section-title">Etapa</div>'+
       '<div class="etapa-dropdown" id="dp_dd">'+
-        '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD('dp_dd')"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</button>'+
+        '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD(\'dp_dd\')"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</button>'+
         '<div class="etapa-menu">'+ETAPAS.map(function(e){return '<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(''+l.id+'',''+e.key+'',true)"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';}).join('')+'</div>'+
       '</div>'+
     '</div>'+
