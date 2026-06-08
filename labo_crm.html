@@ -1241,14 +1241,26 @@ function exportCSV(){
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function diasDesde(l){
   if(!ACTIVAS.includes(l.etapa))return 0;
-  // Use last activity, or last cotización date, or lead creation date
-  const ultAct=l.actividad&&l.actividad.length?l.actividad[l.actividad.length-1].fecha:null;
+  var base=null;
+  // Try last activity date (format d/m/yyyy)
+  var ultAct=l.actividad&&l.actividad.length?l.actividad[l.actividad.length-1].fecha:null;
   if(ultAct){
-    const base=new Date(ultAct.split('/').reverse().join('-'));
-    return Math.max(0,Math.floor((new Date()-base)/(1000*60*60*24)));
+    var parts=String(ultAct).split('/');
+    if(parts.length===3){
+      var dd=parseInt(parts[0],10),mm=parseInt(parts[1],10),yy=parseInt(parts[2],10);
+      if(!isNaN(dd)&&!isNaN(mm)&&!isNaN(yy)){
+        base=new Date(yy,mm-1,dd);
+      }
+    }
   }
-  const baseDate=l.fechaUltimaCot||l.fecha;
-  return Math.max(0,Math.floor((new Date()-new Date(baseDate))/(1000*60*60*24)));
+  // Fallback to last cotización date or lead creation (ISO format)
+  if(!base||isNaN(base.getTime())){
+    var iso=l.fechaUltimaCot||l.fecha;
+    if(iso){base=new Date(iso);}
+  }
+  if(!base||isNaN(base.getTime()))return 0;
+  var diff=Math.floor((new Date()-base)/(1000*60*60*24));
+  return isNaN(diff)?0:Math.max(0,diff);
 }
 function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtK(n){return n>=1000000?Math.round(n/1000)+'K':n>=1000?Math.round(n/1000)+'K':String(Math.round(n));}
