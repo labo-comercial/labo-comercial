@@ -758,10 +758,10 @@ const COSTOS={
   MAD_M:{sup:67,pb:64658.69,op:{"Platea de fundación + Granítico":14918.4,"Termomecánica por AA Split":3360,"Piso Radiante":5913.6,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":5644.8,"Deck":0,"Grúa":2912}},
   MAD_L:{sup:148,pb:140060.61,op:{"Platea de fundación + Granítico":30912,"Termomecánica por AA Split":7840,"Piso Radiante":13328,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":5644.8,"Deck":0,"Grúa":4368}},
   MAD_XL:{sup:190,pb:187659.73,op:{"Platea de fundación + Granítico":43881.6,"Termomecánica por AA Split":11480,"Piso Radiante":17248,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":5644.8,"Deck":0,"Grúa":5824}},
-  S:{sup:65,pb:65749.29,op:{"Platea de fundación + Granítico":4550,"Termomecánica por AA Split":2205,"Piso Radiante":7280,"Línea Blanca":1428,"Paquete Solar":11200,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":980}},
-  M:{sup:86,pb:79651.88,op:{"Platea de fundación + Granítico":6020,"Termomecánica por AA Split":2205,"Piso Radiante":9632,"Línea Blanca":1428,"Paquete Solar":11200,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":980}},
-  L:{sup:130,pb:129804.25,op:{"Platea de fundación + Granítico":9100,"Termomecánica por AA Split":4410,"Piso Radiante":14560,"Línea Blanca":1428,"Paquete Solar":16800,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
-  XL:{sup:151,pb:144834.02,op:{"Platea de fundación + Granítico":10570,"Termomecánica por AA Split":4410,"Piso Radiante":16912,"Línea Blanca":1428,"Paquete Solar":19040,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
+  S:{sup:65,pb:69985.09,op:{"Platea de fundación + Granítico":4550,"Termomecánica por AA Split":2205,"Piso Radiante":4277,"Línea Blanca":1428,"Paquete Solar":11200,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":980}},
+  M:{sup:86,pb:85299.62,op:{"Platea de fundación + Granítico":6020,"Termomecánica por AA Split":2205,"Piso Radiante":5658.8,"Línea Blanca":1428,"Paquete Solar":11200,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":980}},
+  L:{sup:130,pb:139857.86,op:{"Platea de fundación + Granítico":9100,"Termomecánica por AA Split":4410,"Piso Radiante":8554,"Línea Blanca":1428,"Paquete Solar":16800,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
+  XL:{sup:151,pb:156299.56,op:{"Platea de fundación + Granítico":10570,"Termomecánica por AA Split":4410,"Piso Radiante":9935.8,"Línea Blanca":1428,"Paquete Solar":19040,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
 };
 const COSTOS_LOG_TARIFA={MAD_S:3,MAD_M:6,MAD_L:9,MAD_XL:12,S:6,M:6,L:9,XL:12};
 const COSTOS_MONTAJE={MAD_S:[6391.13,9551.13,11951.13,12651.13],MAD_M:[10181.35,14601.35,17501.35,18201.35],MAD_L:[20711.86,28441.86,33516.86,34616.86],MAD_XL:[25256.68,33866.68,39831.68,41131.68],S:[3760,6050,8000,8600],M:[4600,7160,9260,9860],L:[7120,10490,13040,13640],XL:[8800,12710,15560,16160]};
@@ -1627,17 +1627,73 @@ async function _getSiteDrive(){
 }
 async function _spSaveLead(lead){
   await _initMSAL();await _getSiteDrive();
-  // Read existing
+  // Read existing leads
   let leads=[];
   try{
     const r=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content');
-    if(r.ok)leads=JSON.parse(await r.text());
+    if(r.ok){const t=await r.text();if(t)leads=JSON.parse(t);}
   }catch(e){}
-  leads.unshift(lead);
-  // Ensure folder
+
+  // Get next lead number
+  let maxLeadNum=leads.reduce(function(m,l){return Math.max(m,l.leadNum||0);},0);
+
+  // Check if client already exists (exact name match, ignore '—' or empty)
+  const clienteName=(lead.cliente||'').trim();
+  const existingIdx=clienteName&&clienteName!=='—'?leads.findIndex(function(l){return (l.cliente||'').trim()===clienteName;}): -1;
+
+  // Build cotización object
+  const cot={
+    id:'cot_'+Date.now(),
+    fecha:lead.fecha,
+    num:lead.num,
+    linea:lead.linea,
+    modelo:lead.modelo,
+    sup:lead.sup,
+    cant:lead.cant,
+    total:lead.total,
+    pago:lead.pago,
+    plazo:lead.plazo,
+    notas:lead.notas
+  };
+
+  if(existingIdx>=0){
+    // Add cotización to existing lead
+    if(!leads[existingIdx].cotizaciones)leads[existingIdx].cotizaciones=[];
+    leads[existingIdx].cotizaciones.unshift(cot);
+    // Update totals
+    leads[existingIdx].totalPipeline=leads[existingIdx].cotizaciones.reduce(function(s,c){return s+c.total;},0);
+    leads[existingIdx].ultimaCot=cot;
+    leads[existingIdx].fechaUltimaCot=cot.fecha;
+    // Move to top
+    const updated=leads.splice(existingIdx,1)[0];
+    leads.unshift(updated);
+  }else{
+    // New lead
+    maxLeadNum++;
+    const newLead={
+      id:lead.id,
+      leadNum:maxLeadNum,
+      fecha:lead.fecha,
+      cliente:lead.cliente,
+      contacto:lead.contacto,
+      email:lead.email,
+      tel:lead.tel,
+      terreno:lead.terreno,
+      vendedor:lead.vendedor,
+      lugar:lead.lugar,
+      etapa:'Cotizado',
+      actividad:[],
+      cotizaciones:[cot],
+      totalPipeline:cot.total,
+      ultimaCot:cot,
+      fechaUltimaCot:cot.fecha
+    };
+    leads.unshift(newLead);
+  }
+
+  // Ensure folder and write
   const chk=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder);
-  if(chk.status===404)await _gFetch('/drives/'+_driveId+'/root/children',{method:'POST',body:JSON.stringify({name:MSAL_CONFIG.dataFolder,folder:{},"@microsoft.graph.conflictBehavior":'rename'})});
-  // Write
+  if(chk.status===404)await _gFetch('/drives/'+_driveId+'/root/children',{method:'POST',body:JSON.stringify({name:MSAL_CONFIG.dataFolder,folder:{},'@microsoft.graph.conflictBehavior':'rename'})});
   await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(leads)});
   try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
 }

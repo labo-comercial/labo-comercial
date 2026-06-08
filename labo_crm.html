@@ -74,6 +74,35 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--
 .kpi.amber .kpi-explain{color:#7D6608}
 .kpi.red .kpi-explain{color:#7a1f1a}
 
+/* Lead number & cotización badge */
+.lead-num{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);margin-right:4px;letter-spacing:.5px}
+.cot-badge{display:inline-block;background:var(--black);color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:8px;padding:1px 5px;margin-left:3px;vertical-align:middle;border-radius:2px}
+
+/* Cotizaciones list */
+.cot-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.cot-card{border:1px solid var(--border);overflow:hidden}
+.cot-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:#F5F3ED;border-bottom:1px solid var(--border)}
+.cot-card-num{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);letter-spacing:1px}
+.cot-card-date{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid)}
+.cot-card-body{padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cot-card-field label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--mid);text-transform:uppercase;display:block;margin-bottom:2px}
+.cot-card-field span{font-size:12px;font-weight:500}
+.cot-card-total{background:var(--black);color:var(--white);padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
+.cot-card-total-label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;opacity:.4}
+.cot-card-total-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500}
+
+/* Activity timeline */
+.act-timeline{display:flex;flex-direction:column;gap:0;margin-top:12px;padding-left:4px}
+.act-entry{display:flex;gap:14px;padding-bottom:16px;position:relative}
+.act-entry::before{content:'';position:absolute;left:8px;top:14px;bottom:0;width:1px;background:var(--border)}
+.act-entry:last-child::before{display:none}
+.act-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid var(--border);background:var(--white);z-index:1;margin-top:1px}
+.act-dot.is-etapa{background:var(--black);color:var(--white);border-color:var(--black)}
+.act-dot.is-nota{background:#F5F3ED;color:var(--mid)}
+.act-body{flex:1}
+.act-fecha-txt{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);margin-bottom:3px;letter-spacing:.5px}
+.act-texto-txt{font-size:12px;line-height:1.5;color:var(--black);background:var(--card);border:1px solid var(--border);padding:7px 10px}
+
 /* ── SECTION TITLE ── */
 .sec-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -300,21 +329,22 @@ tr:hover td{background:#F5F3ED}
   <div class="content">
     <!-- KPIs fila 1 -->
     <div class="kpi-grid">
-      <div class="kpi dark clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline activo</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-explain">Cotizado + En negociación</div>
+      <div class="kpi dark clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline total</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-explain">Suma de todas las cotizaciones activas</div>
         <div class="kpi-sub" id="kpi-pipeline-sub">—</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Última cotización</div><div class="kpi-value" id="kpi-ultima">USD 0</div><div class="kpi-explain">Suma de últimas cot. por cliente activo</div>
+        <div class="kpi-sub" id="kpi-ultima-sub">—</div></div>
       <div class="kpi green clickable" onclick="setKpiFilter('ganado')" title="Click para filtrar tabla"><div class="kpi-label">Cerrado ganado</div><div class="kpi-value" id="kpi-ganado">USD 0</div><div class="kpi-explain">Total cerrado ganado</div>
         <div class="kpi-sub" id="kpi-ganado-sub">—</div></div>
       <div class="kpi clickable" onclick="setKpiFilter('cerrados')" title="Click para filtrar tabla"><div class="kpi-label">Tasa de conversión</div><div class="kpi-value" id="kpi-conv">0%</div><div class="kpi-explain">Ganados ÷ total cerrado</div>
         <div class="kpi-sub" id="kpi-conv-sub">ganado / cerrado</div></div>
-      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline ponderado</div><div class="kpi-value" id="kpi-ponderado">USD 0</div><div class="kpi-explain">Cotizado ×20% + Negociación ×60%</div><div class="kpi-sub">prob. esperada</div></div>
     </div>
     <!-- KPIs fila 2 -->
     <div class="kpi-grid" style="margin-bottom:20px">
-      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="kpi-ticket">USD 0</div><div class="kpi-sub">pipeline activo</div></div>
-      <div class="kpi amber clickable" onclick="setKpiFilter('frios')" title="Click para filtrar tabla"><div class="kpi-label">Leads sin acción</div><div class="kpi-value" id="kpi-frios">0</div><div class="kpi-sub">+14 días sin actividad</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline ponderado</div><div class="kpi-value" id="kpi-ponderado">USD 0</div><div class="kpi-explain">Cotizado ×20% + Negociación ×60%</div><div class="kpi-sub">prob. esperada</div></div>
+      <div class="kpi amber clickable" onclick="setKpiFilter('frios')" title="Click para filtrar tabla"><div class="kpi-label">Leads sin acción</div><div class="kpi-value" id="kpi-frios">0</div><div class="kpi-explain">+14 días sin actividad</div><div class="kpi-sub">+14 días sin actividad</div></div>
       <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Forecast mes</div><div class="kpi-value" id="kpi-forecast">USD 0</div><div class="kpi-explain">Ganado este mes + 30% ponderado</div>
         <div class="kpi-sub" id="kpi-forecast-sub">—</div></div>
-      <div class="kpi clickable" onclick="setKpiFilter('nuevas')" title="Click para filtrar tabla"><div class="kpi-label">Nuevas este mes</div><div class="kpi-value" id="kpi-nuevas">0</div><div class="kpi-sub">cotizaciones</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('nuevas')" title="Click para filtrar tabla"><div class="kpi-label">Nuevas este mes</div><div class="kpi-value" id="kpi-nuevas">0</div><div class="kpi-explain">Cotizaciones creadas este mes</div><div class="kpi-sub">leads</div></div>
     </div>
     <!-- Pipeline bar -->
     <div class="pipeline-bar" id="pipeline-bar"></div>
@@ -641,7 +671,6 @@ function updateCounts(){
 }
 
 function updateKPIs(){
-  // Single pass over leads for performance
   const base = activeFilter==='all'||activeFilter.startsWith('_kpi:') ? allLeads : getFiltered();
   const activas=[],ganadas=[],perdidas=[];
   base.forEach(l=>{
@@ -649,26 +678,31 @@ function updateKPIs(){
     else if(l.etapa==='Cerrado ganado')ganadas.push(l);
     else if(l.etapa==='Cerrado perdido')perdidas.push(l);
   });
-  const pTot=activas.reduce((s,l)=>s+l.total,0);
-  const gTot=ganadas.reduce((s,l)=>s+l.total,0);
+  // Pipeline total = sum of all cotizaciones for active leads
+  const pTot=activas.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
+  // Última cotización = sum of last cotización per active lead
+  const ultimaTot=activas.reduce((s,l)=>{
+    const uc=l.ultimaCot?l.ultimaCot.total:(l.total||0);
+    return s+uc;
+  },0);
+  const gTot=ganadas.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
   const cerradas=ganadas.length+perdidas.length;
   const conv=cerradas>0?Math.round(ganadas.length/cerradas*100):0;
-  const ticket=activas.length>0?pTot/activas.length:0;
-  const ponderado=activas.reduce((s,l)=>s+l.total*(ETAPA_PROB[l.etapa]||0),0);
+  const ponderado=activas.reduce((s,l)=>s+(l.totalPipeline||l.total||0)*(ETAPA_PROB[l.etapa]||0),0);
   const frios=activas.filter(l=>diasDesde(l)>14).length;
   const now=new Date();
   const nuevas=base.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
-  const ganadoMes=ganadas.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,l)=>s+l.total,0);
-  // Show filter context in pipeline sub
+  const ganadoMes=ganadas.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
   const filterLabel=activeFilter==='all'?'':' (filtrado)';
   document.getElementById('kpi-pipeline').textContent='USD '+fmt(pTot);
   document.getElementById('kpi-pipeline-sub').textContent=activas.length+' leads activos'+filterLabel;
+  document.getElementById('kpi-ultima').textContent='USD '+fmt(ultimaTot);
+  document.getElementById('kpi-ultima-sub').textContent=activas.length+' leads activos'+filterLabel;
   document.getElementById('kpi-ganado').textContent='USD '+fmt(gTot);
   document.getElementById('kpi-ganado-sub').textContent=ganadas.length+' operaciones'+filterLabel;
   document.getElementById('kpi-conv').textContent=conv+'%';
   document.getElementById('kpi-conv-sub').textContent='de '+cerradas+' cerradas'+filterLabel;
   document.getElementById('kpi-ponderado').textContent='USD '+fmt(ponderado);
-  document.getElementById('kpi-ticket').textContent='USD '+fmt(ticket);
   document.getElementById('kpi-frios').textContent=frios;
   document.getElementById('kpi-forecast').textContent='USD '+fmt(ganadoMes+ponderado*0.3);
   document.getElementById('kpi-forecast-sub').textContent='ganado + 30% ponderado'+filterLabel;
@@ -696,17 +730,35 @@ function renderTable(){
   const rows=leads.map(l=>{
     const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
     const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
-    const lbCls=l.linea==='LABO Madera'?'lb-madera':'lb-modular';
-    const d=l.fecha?new Date(l.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    // Dates
+    const dInicio=l.fecha?new Date(l.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    const dUltima=l.fechaUltimaCot?new Date(l.fechaUltimaCot).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):dInicio;
     const dias=diasDesde(l);
     const alrt=dias>14&&ACTIVAS.includes(l.etapa);
     const temp=getTemp(l);
     const tempHtml=temp?'<span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span>':'';
+    // Cotizaciones info
+    const cots=l.cotizaciones||[];
+    const nCots=cots.length;
+    const totalPipeline=l.totalPipeline||l.total||0;
+    const ultimaVal=l.ultimaCot?l.ultimaCot.total:(l.total||0);
+    // Línea/modelo de última cotización
+    const uc=l.ultimaCot||{};
+    const lbCls=(uc.linea||l.linea||'')===('LABO Madera')?'lb-madera':'lb-modular';
+    const lineaLabel=uc.linea||l.linea||'—';
+    const modeloLabel=uc.modelo||l.modelo||'—';
+    // Lead number
+    const numBadge=l.leadNum?'<span class="lead-num">#'+l.leadNum+'</span>':'';
     return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
-      '<td><div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.contacto||'')+'</div></td>'+
-      '<td><span class="lb '+lbCls+'">'+esc(l.linea||'')+'</span><div class="td-muted">Mod. '+esc(l.modelo||'')+'</div></td>'+
-      '<td class="td-mono">USD '+fmt(l.total)+'</td>'+
-      '<td class="td-mono" style="font-size:11px">'+d+'</td>'+
+      '<td>'+numBadge+'<div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.contacto||'')+'</div></td>'+
+      '<td>'+
+        '<span class="lb '+lbCls+'">'+esc(lineaLabel)+'</span>'+
+        '<div class="td-muted">Mod. '+esc(modeloLabel)+(nCots>1?' <span class="cot-badge">+'+( nCots-1)+'</span>':'')+'</div>'+
+      '</td>'+
+      '<td class="td-mono"><div>USD '+fmt(totalPipeline)+'</div>'+
+        (nCots>1?'<div class="td-muted" style="font-size:10px">última: USD '+fmt(ultimaVal)+'</div>':'')+
+      '</td>'+
+      '<td class="td-mono" style="font-size:11px"><div>'+dInicio+'</div>'+(dUltima!==dInicio?'<div class="td-muted" style="font-size:10px">última: '+dUltima+'</div>':'')+'</td>'+
       '<td class="td-mono'+(alrt?' td-hot':'')+'">'+dias+'d</td>'+
       '<td>'+tempHtml+'</td>'+
       '<td><div class="etapa-dropdown" id="dd_'+l.id+'" onclick="event.stopPropagation()">'+
@@ -718,9 +770,9 @@ function renderTable(){
   }).join('');
   c.innerHTML='<table><thead><tr>'+
     '<th onclick="setSort(\'cliente\')">Cliente</th>'+
-    '<th onclick="setSort(\'linea\')">Línea</th>'+
-    '<th onclick="setSort(\'total\')">Total</th>'+
-    '<th onclick="setSort(\'fecha\')">Fecha</th>'+
+    '<th onclick="setSort(\'linea\')">Línea / Modelo</th>'+
+    '<th onclick="setSort(\'totalPipeline\')">Total cotizado</th>'+
+    '<th onclick="setSort(\'fecha\')">Fechas</th>'+
     '<th title="Días sin actividad">Sin act.</th>'+
     '<th>Temp.</th><th>Etapa</th>'+
     '<th onclick="setSort(\'vendedor\')">Vendedor</th>'+
@@ -913,39 +965,82 @@ function renderRanking(){
 function openDetail(id){
   const l=allLeads.find(x=>x.id===id);if(!l)return;
   currentLeadId=id;
-  document.getElementById('dp-title').textContent=l.cliente||'Lead';
+  document.getElementById('dp-title').textContent=(l.leadNum?'#'+l.leadNum+' — ':'')+( l.cliente||'Lead');
   const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
   const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
   const temp=getTemp(l);
-  const actHTML=(l.actividad||[]).map(a=>'<div class="act-item"><div class="act-fecha">'+a.fecha+'</div>'+esc(a.texto)+'</div>').reverse().join('');
+  const cots=l.cotizaciones||[];
+
+  // ── Cotizaciones list ──────────────────────────────────────────────────────
+  const cotsHtml=cots.length>0?
+    '<div class="cot-list">'+cots.map(function(c,i){
+      const d=c.fecha?new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+      const lbCls=(c.linea||'')===('LABO Madera')?'lb-madera':'lb-modular';
+      return '<div class="cot-card">'+
+        '<div class="cot-card-hdr">'+
+          '<span class="cot-card-num">OC N° '+esc(c.num||'—')+'</span>'+
+          '<span class="cot-card-date">'+d+'</span>'+
+        '</div>'+
+        '<div class="cot-card-body">'+
+          '<div class="cot-card-field"><label>Línea</label><span><span class="lb '+lbCls+'">'+esc(c.linea||'—')+'</span></span></div>'+
+          '<div class="cot-card-field"><label>Modelo</label><span>'+esc(c.modelo||'—')+' ('+esc(String(c.sup||''))+'m²)</span></div>'+
+          '<div class="cot-card-field"><label>Cantidad</label><span>'+esc(String(c.cant||1))+' ud.</span></div>'+
+          '<div class="cot-card-field"><label>Cond. pago</label><span>'+esc(c.pago||'—')+'</span></div>'+
+          '<div class="cot-card-field"><label>Plazo</label><span>'+esc(c.plazo||'—')+'</span></div>'+
+          (c.notas&&c.notas!=='—'?'<div class="cot-card-field" style="grid-column:1/-1"><label>Notas</label><span>'+esc(c.notas)+'</span></div>':'')+
+        '</div>'+
+        '<div class="cot-card-total"><span class="cot-card-total-label">Total</span><span class="cot-card-total-val">USD '+fmt(c.total)+'</span></div>'+
+      '</div>';
+    }).join('')+
+    (cots.length>1?'<div class="cot-card-total" style="background:#F5F3ED;border:1px solid var(--border)"><span class="cot-card-total-label" style="color:var(--mid)">PIPELINE TOTAL CLIENTE</span><span class="cot-card-total-val" style="color:var(--black)">USD '+fmt(l.totalPipeline||0)+'</span></div>':'')+
+    '</div>':
+    '<div class="td-muted" style="padding:12px;font-size:12px">Sin cotizaciones registradas.</div>';
+
+  // ── Activity timeline ──────────────────────────────────────────────────────
+  const acts=l.actividad||[];
+  const timelineHtml=acts.length>0?
+    '<div class="act-timeline">'+acts.map(function(a){
+      const isEtapa=a.texto&&a.texto.startsWith('Etapa:');
+      const icon=isEtapa?'→':'✎';
+      return '<div class="act-entry">'+
+        '<div class="act-dot '+(isEtapa?'is-etapa':'is-nota')+'">'+icon+'</div>'+
+        '<div class="act-body">'+
+          '<div class="act-fecha-txt">'+esc(a.fecha)+'</div>'+
+          '<div class="act-texto-txt">'+esc(a.texto)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).reverse().join('')+'</div>':
+    '<div class="td-muted" style="padding:8px 0;font-size:12px">Sin actividad registrada aún.</div>';
+
   document.getElementById('dp-body').innerHTML=
-    '<div class="dp-total"><span class="dp-total-label">Total cotizado</span><span class="dp-total-value">USD '+fmt(l.total)+'</span></div>'+
-    (temp?'<div style="margin-bottom:14px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span></div>':'')+
+    // Temp + etapa
+    (temp?'<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span></div>':'')+
     '<div class="dp-section"><div class="dp-section-title">Etapa</div>'+
       '<div class="etapa-dropdown" id="dp_dd">'+
-        '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD(\'dp_dd\')"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</button>'+
-        '<div class="etapa-menu">'+ETAPAS.map(e=>'<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(\''+l.id+'\',\''+e.key+'\',true)"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>').join('')+'</div>'+
+        '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD('dp_dd')"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</button>'+
+        '<div class="etapa-menu">'+ETAPAS.map(function(e){return '<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(''+l.id+'',''+e.key+'',true)"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';}).join('')+'</div>'+
       '</div>'+
     '</div>'+
-    '<div class="dp-section"><div class="dp-section-title">Lead</div><div class="dp-grid">'+
-      field('Oferta N°',l.num)+field('Fecha',l.fecha?new Date(l.fecha).toLocaleDateString('es-AR'):'-')+
-      field('Línea',l.linea)+field('Modelo',l.modelo+' ('+l.sup+' m²)')+
-      field('Cantidad',l.cant+' ud.')+field('Vendedor',l.vendedor)+
-      field('Lugar',l.lugar)+field('Cond. pago',l.pago)+field('Plazo',l.plazo)+
-    '</div></div>'+
+    // Contact
     '<div class="dp-section"><div class="dp-section-title">Contacto</div><div class="dp-grid">'+
-      field('Nombre',l.contacto)+
-      field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'-')+'</a>')+
-      field('Teléfono',l.tel)+
-      (l.terreno?field('Terreno',l.terreno):'')+
+      field('Nombre',l.contacto||'—')+
+      field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'—')+'</a>')+
+      field('Teléfono',l.tel||'—')+
+      field('Terreno',l.terreno||'—')+
+      field('Vendedor',l.vendedor||'—')+
+      field('Lugar',l.lugar||'—')+
     '</div></div>'+
+    // Cotizaciones
+    '<div class="dp-section"><div class="dp-section-title">Cotizaciones ('+cots.length+')</div>'+cotsHtml+'</div>'+
+    // Motivo pérdida
     (l.motivoPerdida?'<div class="dp-section"><div class="dp-section-title">Motivo de pérdida</div><div style="font-size:13px;font-weight:600;color:var(--red)">'+esc(l.motivoPerdida)+'</div></div>':'')+
-    (l.notas?'<div class="dp-section"><div class="dp-section-title">Notas</div><div style="font-size:13px;line-height:1.5;color:#444">'+esc(l.notas)+'</div></div>':'')+
+    // Activity
     '<div class="dp-section"><div class="dp-section-title">Registrar actividad</div>'+
       '<textarea class="nota-input" id="nota-input" placeholder="Llamado, reunión, propuesta enviada..."></textarea>'+
       '<button class="btn-nota" onclick="addNota()">+ Registrar</button>'+
-      '<div class="actividad-list" id="actividad-list">'+actHTML+'</div>'+
-    '</div>';
+    '</div>'+
+    '<div class="dp-section"><div class="dp-section-title">Historial de actividad</div>'+timelineHtml+'</div>';
+
   document.getElementById('detailOverlay').classList.add('open');
 }
 function field(l,v){return '<div class="dp-field"><label>'+l+'</label><span>'+v+'</span></div>';}
@@ -1035,9 +1130,14 @@ function exportCSV(){
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function diasDesde(l){
   if(!ACTIVAS.includes(l.etapa))return 0;
-  const ult=l.actividad&&l.actividad.length?l.actividad[l.actividad.length-1].fecha:null;
-  const base=ult?new Date(ult.split('/').reverse().join('-')):new Date(l.fecha);
-  return Math.max(0,Math.floor((new Date()-base)/(1000*60*60*24)));
+  // Use last activity, or last cotización date, or lead creation date
+  const ultAct=l.actividad&&l.actividad.length?l.actividad[l.actividad.length-1].fecha:null;
+  if(ultAct){
+    const base=new Date(ultAct.split('/').reverse().join('-'));
+    return Math.max(0,Math.floor((new Date()-base)/(1000*60*60*24)));
+  }
+  const baseDate=l.fechaUltimaCot||l.fecha;
+  return Math.max(0,Math.floor((new Date()-new Date(baseDate))/(1000*60*60*24)));
 }
 function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtK(n){return n>=1000000?Math.round(n/1000)+'K':n>=1000?Math.round(n/1000)+'K':String(Math.round(n));}
