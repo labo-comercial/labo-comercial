@@ -266,6 +266,17 @@ tr:hover td{background:#F5F3ED}
   .velocity-grid{grid-template-columns:repeat(2,1fr)}
   .detail-panel{width:100vw}
 }
+.cot-expand-row td{padding:0!important}
+.cot-expand-inner{background:#F8F7F3;border-top:1px solid var(--border)}
+.cot-expand-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.cot-expand-item:hover{background:#EEE}
+.cot-expand-item.cot-latest{background:#FAFAF7;font-weight:500}
+.cot-item-oc{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--mid);width:70px;flex-shrink:0}
+.cot-item-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);width:65px;flex-shrink:0}
+.cot-item-total{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;margin-left:auto}
+.cot-latest-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;background:var(--black);color:var(--white);padding:2px 6px;margin-left:6px}
+.cot-expand-footer{padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--mid);cursor:pointer;text-align:right}
+.cot-expand-footer:hover{color:var(--black)}
 </style>
 </head>
 <body>
@@ -306,7 +317,7 @@ tr:hover td{background:#F5F3ED}
     </div>
     <div class="s-divider"></div>
     <div class="s-section">
-      <div class="s-label">Etapa</div>
+      <div class="s-label">Status</div>
       <div class="s-item" onclick="setFilter('etapa:Cotizado',this)">Cotizado <span class="s-count" id="cnt-cotizado">0</span></div>
       <div class="s-item" onclick="setFilter('etapa:En negociación',this)">En negociación <span class="s-count" id="cnt-negociacion">0</span></div>
       <div class="s-item" onclick="setFilter('etapa:Cerrado ganado',this)">Cerrado ganado <span class="s-count" id="cnt-ganado">0</span></div>
@@ -668,6 +679,7 @@ function getFiltered(){
     } else {
       const[field,val]=activeFilter.split(':');
       if(field==='temp') leads=leads.filter(l=>getTemp(l)===val);
+      else if(field==='linea') leads=leads.filter(l=>(l.cotizaciones||[{linea:l.linea}]).some(c=>c.linea===val));
       else leads=leads.filter(l=>l[field]===val);
     }
   }
@@ -693,8 +705,8 @@ function updateCounts(){
   document.getElementById('cnt-negociacion').textContent=allLeads.filter(l=>l.etapa==='En negociación').length;
   document.getElementById('cnt-ganado').textContent=allLeads.filter(l=>l.etapa==='Cerrado ganado').length;
   document.getElementById('cnt-perdido').textContent=allLeads.filter(l=>l.etapa==='Cerrado perdido').length;
-  document.getElementById('cnt-madera').textContent=allLeads.filter(l=>l.linea==='LABO Madera').length;
-  document.getElementById('cnt-modular').textContent=allLeads.filter(l=>l.linea==='LABO Modular').length;
+  document.getElementById('cnt-madera').textContent=allLeads.filter(l=>(l.cotizaciones||[{linea:l.linea}]).some(c=>c.linea==='LABO Madera')).length;
+  document.getElementById('cnt-modular').textContent=allLeads.filter(l=>(l.cotizaciones||[{linea:l.linea}]).some(c=>c.linea==='LABO Modular')).length;
   document.getElementById('cnt-caliente').textContent=allLeads.filter(l=>getTemp(l)==='caliente').length;
   document.getElementById('cnt-tibio').textContent=allLeads.filter(l=>getTemp(l)==='tibio').length;
   document.getElementById('cnt-frio').textContent=allLeads.filter(l=>getTemp(l)==='frio').length;
@@ -754,60 +766,94 @@ function updatePipelineBar(){
 }
 
 function renderTable(){
-  const leads=getFiltered();
-  const c=document.getElementById('table-container');
+  var leads=getFiltered();
+  var c=document.getElementById('table-container');
   if(!leads.length){c.innerHTML='<div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Sin resultados</div></div>';return;}
-  const rows=leads.map(l=>{
-    const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
-    const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
-    // Dates
-    const dInicio=l.fecha?new Date(l.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
-    const dUltima=l.fechaUltimaCot?new Date(l.fechaUltimaCot).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):dInicio;
-    const dias=diasDesde(l);
-    const alrt=dias>14&&ACTIVAS.includes(l.etapa);
-    const temp=getTemp(l);
-    const tempHtml=temp?'<span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span>':'';
-    // Cotizaciones info
-    const cots=l.cotizaciones||[];
-    const nCots=cots.length;
-    const totalPipeline=l.totalPipeline||l.total||0;
-    const ultimaVal=l.ultimaCot?l.ultimaCot.total:(l.total||0);
-    // Línea/modelo de última cotización
-    const uc=l.ultimaCot||{};
-    const lbCls=(uc.linea||l.linea||'')===('LABO Madera')?'lb-madera':'lb-modular';
-    const lineaLabel=uc.linea||l.linea||'—';
-    const modeloLabel=uc.modelo||l.modelo||'—';
-    // Lead number
-    const numBadge=l.leadNum?'<span class="lead-num">#'+l.leadNum+'</span>':'';
-    return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
-      '<td>'+numBadge+'<div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.contacto||'')+'</div></td>'+
-      '<td>'+
-        '<span class="lb '+lbCls+'">'+esc(lineaLabel)+'</span>'+
-        '<div class="td-muted">Mod. '+esc(modeloLabel)+(nCots>1?' <span class="cot-badge">+'+( nCots-1)+'</span>':'')+'</div>'+
-      '</td>'+
-      '<td class="td-mono"><div>USD '+fmt(totalPipeline)+'</div>'+
-        (nCots>1?'<div class="td-muted" style="font-size:10px">última: USD '+fmt(ultimaVal)+'</div>':'')+
-      '</td>'+
-      '<td class="td-mono" style="font-size:11px"><div>'+dInicio+'</div>'+(dUltima!==dInicio?'<div class="td-muted" style="font-size:10px">última: '+dUltima+'</div>':'')+'</td>'+
-      '<td class="td-mono'+(alrt?' td-hot':'')+'">'+dias+'d</td>'+
-      '<td>'+tempHtml+'</td>'+
-      '<td><div class="etapa-dropdown" id="dd_'+l.id+'" onclick="event.stopPropagation()">'+
-        '<button class="etapa '+cls+'" onclick="toggleDD(\'dd_'+l.id+'\')"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</button>'+
-        '<div class="etapa-menu">'+ETAPAS.map(e=>'<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(\''+l.id+'\',\''+e.key+'\')"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>').join('')+'</div>'+
-      '</div></td>'+
-      '<td class="td-mono td-muted" style="font-size:11px">'+esc(l.vendedor||'—')+'</td>'+
-    '</tr>';
+  var rows=leads.map(function(l){
+    var cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+    var edot=ETAPAS.find(function(e){return e.key===l.etapa;})||ETAPAS[0];
+    var dInicio=l.fecha?new Date(l.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    var dias=diasDesde(l);
+    var alrt=dias>14&&ACTIVAS.includes(l.etapa);
+    var temp=getTemp(l);
+    var tempHtml=temp?'<span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span>':'—';
+    var cots=l.cotizaciones||[];
+    var nCots=cots.length;
+    var uc=l.ultimaCot||cots[cots.length-1]||{};
+    var lbCls=(uc.linea||l.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
+    var lineaLabel=uc.linea||l.linea||'—';
+    var modeloLabel=uc.modelo||l.modelo||'—';
+    var lid=l.id;
+    var etapaMenu=ETAPAS.map(function(e){
+      return '<button class="'+ETAPA_CLS[e.key]+'" data-eid="'+e.key+'" data-lid="'+lid+'" onclick="changeEtapa(this.dataset.lid,this.dataset.eid)"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';
+    }).join('');
+    var mainRow=
+      '<tr class="lead-main-row" data-lid="'+lid+'" onclick="toggleCots(this.dataset.lid)" style="cursor:pointer">'+
+        '<td style="text-align:center"><span style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--mid)">'+(l.leadNum||'—')+'</span></td>'+
+        '<td style="font-family:IBM Plex Mono,monospace;font-size:11px">'+dInicio+'</td>'+
+        '<td><div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted" style="font-size:10px">'+esc(l.contacto||'')+'</div></td>'+
+        '<td><span class="lb '+lbCls+'">'+esc(lineaLabel)+'</span><div class="td-muted" style="font-size:10px">Mod. '+esc(modeloLabel)+(nCots>1?' <span class="cot-badge">'+nCots+'</span>':'')+'</div></td>'+
+        '<td style="font-size:11px;color:var(--mid)">'+esc(l.vendedor||'—')+'</td>'+
+        '<td onclick="event.stopPropagation()">'+
+          '<div class="etapa-dropdown" id="dd_'+lid+'">'+
+            '<button class="etapa '+cls+'" data-did="dd_'+lid+'" onclick="toggleDD(this.dataset.did)">'+
+              '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
+            '</button>'+
+            '<div class="etapa-menu">'+etapaMenu+'</div>'+
+          '</div>'+
+        '</td>'+
+        '<td style="text-align:center;font-family:IBM Plex Mono,monospace;font-size:12px'+(alrt?';color:var(--red)':'')+'">'+dias+'d</td>'+
+        '<td>'+tempHtml+'</td>'+
+      '</tr>';
+    var cotRows='';
+    if(nCots>0){
+      var cotsDesc=[].concat(cots).reverse();
+      var cotItems=cotsDesc.map(function(ct,i){
+        var d=ct.fecha?new Date(ct.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+        var lc=(ct.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
+        return '<div class="cot-expand-item'+(i===0?' cot-latest':'')+'" data-lid="'+lid+'" onclick="openDetail(this.dataset.lid)">'+
+          '<span class="cot-item-oc">OC '+esc(ct.num||'—')+'</span>'+
+          '<span class="cot-item-date">'+d+'</span>'+
+          '<span class="lb '+lc+'" style="font-size:9px;padding:1px 5px">'+esc(ct.linea||'—')+'</span>'+
+          '<span class="td-muted" style="font-size:10px">Mod. '+esc(ct.modelo||'—')+'</span>'+
+          '<span class="cot-item-total">USD '+fmt(ct.total)+'</span>'+
+          (i===0?'<span class="cot-latest-badge">última</span>':'')+
+        '</div>';
+      }).join('');
+      cotRows=
+        '<tr class="cot-expand-row" id="cots_'+lid+'" style="display:none">'+
+          '<td colspan="8" style="padding:0">'+
+            '<div class="cot-expand-inner">'+
+              cotItems+
+              '<div class="cot-expand-footer" data-lid="'+lid+'" onclick="openDetail(this.dataset.lid)">Ver detalle completo y actividad →</div>'+
+            '</div>'+
+          '</td>'+
+        '</tr>';
+    }
+    return mainRow+cotRows;
   }).join('');
-  c.innerHTML='<table><thead><tr>'+
-    '<th onclick="setSort(\'cliente\')">Cliente</th>'+
-    '<th onclick="setSort(\'linea\')">Línea / Modelo</th>'+
-    '<th onclick="setSort(\'totalPipeline\')">Total cotizado</th>'+
-    '<th onclick="setSort(\'fecha\')">Fechas</th>'+
-    '<th title="Días sin actividad">Sin act.</th>'+
-    '<th>Temp.</th><th>Etapa</th>'+
-    '<th onclick="setSort(\'vendedor\')">Vendedor</th>'+
-  '</tr></thead><tbody>'+rows+'</tbody></table>';
+  c.innerHTML=
+    '<table><thead><tr>'+
+      '<th onclick="setSort(\x27leadNum\x27)" style="width:40px;text-align:center">#</th>'+
+      '<th onclick="setSort(\x27fecha\x27)" style="width:80px">Fecha</th>'+
+      '<th onclick="setSort(\x27cliente\x27)">Cliente</th>'+
+      '<th onclick="setSort(\x27linea\x27)">Línea / Modelo</th>'+
+      '<th onclick="setSort(\x27vendedor\x27)">Vendedor</th>'+
+      '<th style="width:140px">Status</th>'+
+      '<th style="width:70px;text-align:center">Sin act.</th>'+
+      '<th style="width:90px">Temp.</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
 }
+
+
+function toggleCots(id){
+  var row=document.getElementById('cots_'+id);
+  if(!row)return openDetail(id);
+  var isOpen=row.style.display!=='none';
+  document.querySelectorAll('.cot-expand-row').forEach(function(r){r.style.display='none';});
+  if(!isOpen)row.style.display='';
+}
+
 
 // ── Funnel ────────────────────────────────────────────────────────────────────
 function renderFunnel(){
@@ -820,10 +866,12 @@ function renderFunnel(){
     const val=allLeads.filter(l=>l.etapa===e.key).reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
     const pct=Math.max(n/Math.max(allLeads.length,1)*100,2);
     const conv=i>0?Math.round(n/Math.max(allLeads.filter(l=>l.etapa===activas[i-1].key).length,1)*100)+'%':'—';
+    const totalLeads=Math.max(allLeads.length,1);
+    const pctLeads=Math.round(n/totalLeads*100);
     html+='<div class="funnel-row">'+
       '<div class="funnel-label">'+e.key+'</div>'+
       '<div class="funnel-bar-wrap"><div class="funnel-fill" style="width:'+pct+'%;background:'+e.color+'"><span>'+n+'</span></div></div>'+
-      '<div class="funnel-meta">USD '+fmtK(val)+'</div>'+
+      '<div class="funnel-meta"><div>USD '+fmtK(val)+'</div><div style="font-size:9px;color:var(--mid)">'+pctLeads+'% del total</div></div>'+
       '<div class="funnel-arrow">'+(i>0?conv:'')+'</div>'+
     '</div>';
   });
@@ -855,13 +903,21 @@ function renderCharts(){
   });
   renderBarChart('chart-modelo',byModelo,'#1A5276',v=>'USD '+fmtK(v));
 
-  // Por vendedor (cantidad leads)
+  // Por vendedor (cantidad leads) — fixed vendor list
+  const VENDEDORES=['Pablo Spinetto','Leandro Seoane','Hector Bermudez','Victoria Lopez Aybar'];
   const byVend={};
-  allLeads.forEach(l=>{if(l.vendedor)byVend[l.vendedor]=(byVend[l.vendedor]||0)+1;});
+  VENDEDORES.forEach(v=>byVend[v]=0);
+  allLeads.forEach(l=>{
+    var vend=l.vendedor||'';
+    if(VENDEDORES.includes(vend))byVend[vend]++;
+    else if(vend&&vend!=='—') byVend['Otros']=(byVend['Otros']||0)+1;
+  });
+  // Remove zeros
+  Object.keys(byVend).forEach(k=>{if(!byVend[k])delete byVend[k];});
   renderBarChart('chart-vendedor',byVend,'#7D3C98',v=>v+' leads');
 
-  // Por línea — iterate cotizaciones
-  const byLinea={};
+  // Por línea — iterate cotizaciones, force both categories
+  const byLinea={'LABO Madera':0,'LABO Modular':0};
   allLeads.forEach(l=>{
     const cots=l.cotizaciones||[{linea:l.linea,total:l.total}];
     cots.forEach(c=>{if(c.linea)byLinea[c.linea]=(byLinea[c.linea]||0)+(c.total||0);});
@@ -869,15 +925,17 @@ function renderCharts(){
   renderBarChart('chart-linea',byLinea,'#D4870A',v=>'USD '+fmtK(v));
 
   // Conversión por vendedor
+  const VENDEDORES2=['Pablo Spinetto','Leandro Seoane','Hector Bermudez','Victoria Lopez Aybar'];
   const convVend={};
+  VENDEDORES2.forEach(v=>convVend[v]={g:0,t:0});
   allLeads.forEach(l=>{
-    if(!l.vendedor)return;
-    if(!convVend[l.vendedor])convVend[l.vendedor]={g:0,t:0};
-    if(l.etapa==='Cerrado ganado')convVend[l.vendedor].g++;
-    if(l.etapa==='Cerrado ganado'||l.etapa==='Cerrado perdido')convVend[l.vendedor].t++;
+    var vend=l.vendedor||'';
+    if(!VENDEDORES2.includes(vend))return;
+    if(l.etapa==='Cerrado ganado')convVend[vend].g++;
+    if(l.etapa==='Cerrado ganado'||l.etapa==='Cerrado perdido')convVend[vend].t++;
   });
   const convPct={};
-  Object.entries(convVend).forEach(([v,d])=>{if(d.t>0)convPct[v]=Math.round(d.g/d.t*100);});
+  Object.entries(convVend).forEach(([v,d])=>{if(d.t>0)convPct[v]=Math.round(d.g/d.t*100);else convPct[v]=0;});
   renderBarChart('chart-conv-vendedor',convPct,'#1E8449',v=>v+'%',100);
 }
 
@@ -973,7 +1031,7 @@ function renderUrgentes(){
       '<td class="td-mono td-muted" style="font-size:11px">'+esc(l.vendedor||'—')+'</td>'+
     '</tr>';
   }).join('');
-  c.innerHTML='<table><thead><tr><th>Cliente</th><th>Total</th><th>Inactividad</th><th>Etapa</th><th>Vendedor</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  c.innerHTML='<table><thead><tr><th>Cliente</th><th>Total</th><th>Inactividad</th><th>Status</th><th>Vendedor</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 // ── Ranking por temperatura ───────────────────────────────────────────────────
@@ -998,7 +1056,7 @@ function renderRanking(){
       '<td class="td-mono td-muted" style="font-size:11px">'+diasDesde(l)+'d</td>'+
     '</tr>';
   }).join('');
-  c.innerHTML='<table><thead><tr><th>#</th><th>Cliente</th><th>Total</th><th>Temperatura</th><th>Etapa</th><th>Días</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  c.innerHTML='<table><thead><tr><th>#</th><th>Cliente</th><th>Total</th><th>Temperatura</th><th>Status</th><th>Días</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
@@ -1069,7 +1127,7 @@ function openDetail(id){
   // Assemble panel
   var html='';
   if(temp) html+='<div style="margin-bottom:14px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'\uD83D\uDD25':temp==='tibio'?'\uD83C\uDF24':'\u2744\uFE0F')+' '+temp+'</span></div>';
-  html+='<div class="dp-section"><div class="dp-section-title">Etapa</div>'+
+  html+='<div class="dp-section"><div class="dp-section-title">Status</div>'+
     '<div class="etapa-dropdown" id="dp_dd_panel">'+
       '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD(\'dp_dd_panel\')">'+
         '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
