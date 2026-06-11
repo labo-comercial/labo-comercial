@@ -473,89 +473,90 @@ tr:hover td{background:#F5F3ED}
 
 <script src="./msal-browser.min.js"></script>
 <script>
-// ── SharePoint / Microsoft Graph storage ─────────────────────────────────────
-const MSAL_CONFIG={
-  clientId:'f47da2c5-7922-4e2f-8648-51b8486552fb',
-  tenantId:'c408b6d8-ae0b-4d30-9056-da52e18116c4',
-  sitePath:'/sites/GerenciaComercial2',
-  tenantDomain:'4housing22.sharepoint.com',
-  authority:'https://login.microsoftonline.com/c408b6d8-ae0b-4d30-9056-da52e18116c4',
-  redirectUri:'https://labo-comercial.github.io/labo-comercial/labo_crm.html',
-  scopes:['https://graph.microsoft.com/Files.ReadWrite.All','https://graph.microsoft.com/Sites.ReadWrite.All'],
-  dataFile:'labo_crm_data.json',dataFolder: '02 PLACE - LABO/RC-01 COTIZACIONES/0000 CLIENTE - DESCRIPCION (PLANTILLAS)/03 COSTEO/LABO/LABO-CRM'
-};
-let msalInst=null,gToken=null,siteId=null,driveId=null;
-async function initMSAL(){
-  var w=0;while(typeof msal==='undefined'&&w<5000){await new Promise(r=>setTimeout(r,100));w+=100;}
-  if(typeof msal==='undefined')throw new Error('MSAL no cargó');
-  if(msalInst)return true;
-  msalInst=new msal.PublicClientApplication({auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});
-  await msalInst.initialize();
-  // Handle redirect response (Safari)
-  try{
-    const resp=await msalInst.handleRedirectPromise();
-    if(resp&&resp.accessToken){gToken=resp.accessToken;return true;}
-  }catch(e){console.warn('handleRedirect:',e);}
-  const acc=msalInst.getAllAccounts();
-  if(acc.length>0){try{const r=await msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});gToken=r.accessToken;return true;}catch(e){}}
-  var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  if(isSafari){
-    await msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
-    return false;
-  } else {
-    const r=await msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
-    gToken=r.accessToken;return true;
-  }
+// ── Supabase (datos) + Microsoft Azure AD (login) ────────────────────────────
+const SUPABASE_URL='https://rhajlvmneyvgqlyeyjsd.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYWpsdm1uZXl2Z3FseWV5anNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODc3MDYsImV4cCI6MjA5Njc2MzcwNn0.iXkFP1T4DEhPtzGn7xtIfM7msh9Ft35DZUvVtCErXOk';
+
+// Convert Supabase row (snake_case) → app lead (camelCase)
+function _rowToLead(r){
+  return {
+    id:r.id, leadNum:r.lead_num, fecha:r.fecha, cliente:r.cliente, contacto:r.contacto,
+    email:r.email, tel:r.tel, terreno:r.terreno, vendedor:r.vendedor, lugar:r.lugar,
+    etapa:r.etapa, motivoPerdida:r.motivo_perdida, cotizaciones:r.cotizaciones||[],
+    actividad:r.actividad||[], totalPipeline:r.total_pipeline,
+    ultimaCot:r.ultima_cot, fechaUltimaCot:r.fecha_ultima_cot
+  };
 }
-async function gFetch(url,opts){
-  if(!gToken)await initMSAL();
-  // Always get fresh token for Graph
-  try{
-    const acc=msalInst.getAllAccounts();
-    if(acc.length>0){
-      const r=await msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});
-      gToken=r.accessToken;
+// Convert app lead (camelCase) → Supabase row (snake_case)
+function _leadToRow(l){
+  return {
+    id:l.id, lead_num:l.leadNum, fecha:l.fecha, cliente:l.cliente, contacto:l.contacto,
+    email:l.email, tel:l.tel, terreno:l.terreno, vendedor:l.vendedor, lugar:l.lugar,
+    etapa:l.etapa, motivo_perdida:l.motivoPerdida||'', cotizaciones:l.cotizaciones||[],
+    actividad:l.actividad||[], total_pipeline:l.totalPipeline||0,
+    ultima_cot:l.ultimaCot||null, fecha_ultima_cot:l.fechaUltimaCot||null,
+    updated_at:new Date().toISOString()
+  };
+}
+async function _sbFetch(path,opts){
+  return fetch(SUPABASE_URL+'/rest/v1/'+path,{
+    ...opts,
+    headers:{
+      'apikey':SUPABASE_KEY,
+      'Authorization':'Bearer '+SUPABASE_KEY,
+      'Content-Type':'application/json',
+      ...(opts&&opts.headers)
     }
-  }catch(e){console.warn('Token refresh failed:',e);}
-  console.log('Token preview:',gToken?gToken.substring(0,30)+'...':'null');
-  return fetch('https://graph.microsoft.com/v1.0'+url,{...opts,headers:{'Authorization':'Bearer '+gToken,'Content-Type':'application/json',...(opts&&opts.headers)}});
+  });
 }
-async function getSiteDrive(){
-  if(siteId&&driveId)return;
-  console.log('Getting site, token:', gToken?gToken.substring(0,20)+'...':'null');
-  const s=await gFetch('/sites/'+MSAL_CONFIG.tenantDomain+':'+MSAL_CONFIG.sitePath);
-  const sJson=await s.json();
-  console.log('Site response:', s.status, JSON.stringify(sJson).substring(0,100));
-  if(!s.ok)throw new Error('No se pudo acceder al sitio SharePoint: '+s.status+' '+JSON.stringify(sJson));
-  siteId=sJson.id;
-  const d=await gFetch('/sites/'+siteId+'/drive');
-  const dJson=await d.json();
-  console.log('Drive response:', d.status, JSON.stringify(dJson).substring(0,100));
-  if(!d.ok)throw new Error('No se pudo acceder al drive: '+d.status);
-  driveId=dJson.id;
-  console.log('siteId:', siteId, 'driveId:', driveId);
-}
+// Read all leads from Supabase
 async function readLeads(){
   try{
-    await initMSAL();await getSiteDrive();
-    const r=await gFetch('/drives/'+driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content');
-    if(r.status===404)return[];
-    return JSON.parse(await r.text());
-  }catch(e){
-    try{const r=localStorage.getItem('labo_crm_leads');return r?JSON.parse(r):[];}catch(e2){return[];}
-  }
-}
-async function writeLeads(leads){
-  try{
-    await getSiteDrive();
-    const chk=await gFetch('/drives/'+driveId+'/root:/'+MSAL_CONFIG.dataFolder);
-    if(chk.status===404)await gFetch('/drives/'+driveId+'/root/children',{method:'POST',body:JSON.stringify({name:MSAL_CONFIG.dataFolder,folder:{},'@microsoft.graph.conflictBehavior':'rename'})});
-    await gFetch('/drives/'+driveId+'/root:/'+MSAL_CONFIG.dataFolder+'/'+MSAL_CONFIG.dataFile+':/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(leads)});
+    const r=await _sbFetch('labo_leads?select=*&order=fecha_ultima_cot.desc.nullslast',{method:'GET'});
+    if(!r.ok)throw new Error('Supabase read '+r.status);
+    const rows=await r.json();
+    const leads=rows.map(_rowToLead);
     try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
+    return leads;
   }catch(e){
-    try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e2){}
+    console.warn('Supabase read failed, using cache:',e);
+    try{const c=localStorage.getItem('labo_crm_leads');return c?JSON.parse(c):[];}catch(e2){return[];}
   }
 }
+// Save a SINGLE lead (upsert) — avoids overwriting other vendors' changes
+async function saveLeadToDB(lead){
+  try{
+    const row=_leadToRow(lead);
+    const r=await _sbFetch('labo_leads?on_conflict=id',{
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(row)
+    });
+    if(!r.ok){console.warn('Supabase save '+r.status,await r.text());}
+    return r.ok;
+  }catch(e){console.warn('saveLeadToDB error:',e);return false;}
+}
+// Legacy compatibility — writeLeads now upserts each lead individually
+async function writeLeads(leads){
+  for(const l of leads){await saveLeadToDB(l);}
+  try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
+}
+// Save only the currently-modified lead
+function saveAllLeads(){
+  if(currentLeadId){
+    const l=allLeads.find(x=>x.id===currentLeadId);
+    if(l){saveLeadToDB(l).catch(e=>console.warn(e));return;}
+  }
+  // Fallback: save all (rare)
+  writeLeads(allLeads).catch(e=>console.warn(e));
+}
+// Save a specific lead by id
+function saveLeadById(id){
+  const l=allLeads.find(x=>x.id===id);
+  if(l)saveLeadToDB(l).catch(e=>console.warn(e));
+}
+
+
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ETAPAS=[
@@ -605,7 +606,6 @@ async function loadData(){
   }catch(e){console.error('loadData error:',e);allLeads=[];}
   render();
 }
-function saveAllLeads(){writeLeads(allLeads).catch(e=>console.warn(e));}
 
 // ── Temperature score ─────────────────────────────────────────────────────────
 function _terrenoScore(l){
@@ -1173,7 +1173,7 @@ function _applyEtapa(id,etapa,fromDetail,motivo){
   if(motivo)l.motivoPerdida=motivo;
   if(!l.actividad)l.actividad=[];
   l.actividad.push({fecha:new Date().toLocaleDateString('es-AR'),texto:'Etapa: '+etapa+(motivo?' — '+motivo:'')});
-  saveAllLeads();
+  saveLeadToDB(l).catch(e=>console.warn(e));
   document.querySelectorAll('.etapa-dropdown.open').forEach(d=>d.classList.remove('open'));
   render();
   if(fromDetail&&currentLeadId)openDetail(currentLeadId);
@@ -1205,9 +1205,9 @@ function addNota(){
   const l=allLeads.find(x=>x.id===currentLeadId);if(!l)return;
   if(!l.actividad)l.actividad=[];
   l.actividad.push({fecha:new Date().toLocaleDateString('es-AR'),texto});
-  inp.value='';saveAllLeads();
-  const list=document.getElementById('actividad-list');
-  if(list)list.innerHTML=l.actividad.map(a=>'<div class="act-item"><div class="act-fecha">'+a.fecha+'</div>'+esc(a.texto)+'</div>').reverse().join('');
+  inp.value='';
+  saveLeadToDB(l).catch(e=>console.warn(e));
+  openDetail(currentLeadId);
 }
 
 // ── Filters ───────────────────────────────────────────────────────────────────
@@ -1280,7 +1280,13 @@ function setKpiFilter(type){
 }
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',loadData);}else{loadData();}
-setInterval(loadData,30000);
+// Auto-refresh cada 30s solo si no hay un panel de detalle abierto (no interrumpe al usuario)
+setInterval(function(){
+  var overlay=document.getElementById('detailOverlay');
+  var detailOpen=overlay&&overlay.classList.contains('open');
+  var modalOpen=document.getElementById('motivoModal')&&document.getElementById('motivoModal').classList.contains('open');
+  if(!detailOpen&&!modalOpen)loadData();
+},30000);
 </script>
 </body>
 </html>
