@@ -779,7 +779,8 @@ function renderTable(){
     var tempHtml=temp?'<span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span>':'—';
     var cots=l.cotizaciones||[];
     var nCots=cots.length;
-    var uc=l.ultimaCot||cots[cots.length-1]||{};
+    var cotsByDate=(cots&&cots.length)?[].concat(cots).sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);}):[];
+    var uc=l.ultimaCot||cotsByDate[0]||{};
     var lbCls=(uc.linea||l.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
     var lineaLabel=uc.linea||l.linea||'—';
     var modeloLabel=uc.modelo||l.modelo||'—';
@@ -807,7 +808,7 @@ function renderTable(){
       '</tr>';
     var cotRows='';
     if(nCots>0){
-      var cotsDesc=[].concat(cots).reverse();
+      var cotsDesc=[].concat(cots).sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
       var cotItems=cotsDesc.map(function(ct,i){
         var d=ct.fecha?new Date(ct.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
         var lc=(ct.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
