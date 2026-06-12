@@ -998,14 +998,6 @@ function togExport(v){
   const yb=document.getElementById('yes_Export');const nb=document.getElementById('no_Export');
   if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);
   const pr=document.getElementById('pr_Export');if(pr)pr.textContent=v?'Sí':'No';
-  // Update platea price display if shown
-  const cant=getCant();
-  const plateaRow=document.getElementById('pr_Platea de fundación + Granítico');
-  if(plateaRow){plateaRow.textContent='USD '+fmt(platePrice(sel)*cant);}
-  // Update logistics price display
-  const lp=kmVal?calcLog(sel,kmVal):0;
-  const lpEl=document.getElementById('lprice');
-  if(lpEl)lpEl.textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';
   // Update tarifa hint text
   const tarifaShow=v?COSTOS_LOG_TARIFA_EXPORT[sel]:COSTOS_LOG_TARIFA[sel];
   const hint=document.getElementById('tarifaHint');
@@ -1044,7 +1036,8 @@ function refreshOptPrices(){
   const d=COSTOS[sel];const cant=getCant();
   Object.entries(d.op).forEach(([name,price])=>{
     const el=document.getElementById('pr_'+name);
-    if(el&&price>0)el.textContent='USD '+fmt(price*cant);
+    const dispPrice=(name==='Platea de fundación + Granítico')?platePrice(sel):price;
+    if(el&&dispPrice>0)el.textContent='USD '+fmt(dispPrice*cant);
   });
   const lp=kmVal?calcLog(sel,kmVal):0;
   const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;
