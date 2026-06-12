@@ -990,6 +990,8 @@ const tarifaShow=exportVal?COSTOS_LOG_TARIFA_EXPORT[k]:COSTOS_LOG_TARIFA[k];lrow
 const hasMontaje=COSTOS_MONTAJE[k].some(v=>v>0);const mrow=document.createElement('div');mrow.className='orow'+(hasMontaje?'':' na');mrow.id='or_Montaje';
 mrow.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_Montaje" onclick="togOpt('Montaje',true)" ${!hasMontaje?'disabled':''}>✓</button><button id="no_Montaje" onclick="togOpt('Montaje',false)" ${!hasMontaje?'disabled':''} class="active-no">—</button></div><span class="oname">Montaje</span><span class="kmhint" style="margin-left:6px">${hasMontaje?'(según km ingresados)':'⚠ tramos no configurados → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="pr_Montaje">—</span>`;list.appendChild(mrow);}
 
+function togOpt(name,v){opts[name]=v;const row=document.getElementById('or_'+name);if(row){v?row.classList.add('on'):row.classList.remove('on');}const yb=document.getElementById('yes_'+name);const nb=document.getElementById('no_'+name);if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);if(name==='Montaje'&&kmVal){const mp=v?calcMontaje(sel,kmVal):0;document.getElementById('pr_Montaje').textContent=(v&&mp>0)?'USD '+fmt(mp):'—';}upd();}
+
 function togExport(v){
   exportVal=v;
   const row=document.getElementById('or_Export');if(row){v?row.classList.add('on'):row.classList.remove('on');}
