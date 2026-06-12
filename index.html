@@ -764,6 +764,10 @@ const COSTOS={
   XL:{sup:151,pb:156299.56,op:{"Platea de fundación + Granítico":10570,"Termomecánica por AA Split":4410,"Piso Radiante":9935.8,"Línea Blanca":1428,"Paquete Solar":19040,"Estufa a Leña":2100,"Pérgola":2800,"Deck":2800,"Grúa":1960}},
 };
 const COSTOS_LOG_TARIFA={MAD_S:3,MAD_M:6,MAD_L:9,MAD_XL:12,S:6,M:6,L:9,XL:12};
+// Tarifas USD/km CON exportación (a Uruguay)
+const COSTOS_LOG_TARIFA_EXPORT={MAD_S:9,MAD_M:18,MAD_L:27,MAD_XL:36,S:22,M:22,L:33,XL:44};
+// Platea/fundación CON exportación (precio de venta)
+const PLATEA_EXPORT={MAD_S:14700,MAD_M:22400,MAD_L:46900,MAD_XL:66500,S:11375,M:15050,L:17062.50,XL:22575};
 const COSTOS_MONTAJE={MAD_S:[6391.13,9551.13,11951.13,12651.13],MAD_M:[10181.35,14601.35,17501.35,18201.35],MAD_L:[20711.86,28441.86,33516.86,34616.86],MAD_XL:[25256.68,33866.68,39831.68,41131.68],S:[3760,6050,8000,8600],M:[4600,7160,9260,9860],L:[7120,10490,13040,13640],XL:[8800,12710,15560,16160]};
 
 // Línea de producto por modelo
@@ -847,9 +851,10 @@ function getOpcionalesDesc(){
   if(kmVal&&kmVal>=100)result.push('Logística y transporte, calculados según distancia al destino.');
   return result;
 }
-let sel=null,opts={},kmVal=null;
+let sel=null,opts={},kmVal=null,exportVal=false;
 
-function calcLog(m,km){if(!km||km<100)return 0;const t=COSTOS_LOG_TARIFA[m]||0;if(!t)return 0;return t*km*(km>=101?0.7:1)*MARKUP;}
+function calcLog(m,km){if(!km||km<100)return 0;const t=(exportVal?COSTOS_LOG_TARIFA_EXPORT[m]:COSTOS_LOG_TARIFA[m])||0;if(!t)return 0;const factor=exportVal?1:(km>=101?0.7:1);return t*km*factor*MARKUP;}
+function platePrice(m){return exportVal?(PLATEA_EXPORT[m]||0):(COSTOS[m].op['Platea de fundación + Granítico']||0);}
 function calcMontaje(m,km){if(!km||km<1)return 0;const t=COSTOS_MONTAJE[m];const c=km<=100?t[0]:km<=500?t[1]:km<=1200?t[2]:t[3];return c*MARKUP;}
 
 // ── Supabase config (datos del CRM) ──────────────────────────────────────────
@@ -975,13 +980,36 @@ function selModel(k){sel=k;document.querySelectorAll('.mcard').forEach(c=>c.clas
 function getCant(){return parseInt(document.getElementById('cant').value)||1;}
 function buildOpts(k){const d=COSTOS[k];const list=document.getElementById('olist');list.innerHTML='';
 const cant=getCant();
-Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;const displayName=getOptLabel(name);row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${displayName}</span></div><span class="oprice" id="pr_${name}">${price===0?'N/D':'USD '+fmt(price*cant)}</span>`;list.appendChild(row);});
-const tarifa=COSTOS_LOG_TARIFA[k];const lrow=document.createElement('div');lrow.className='lrow';lrow.id='lrow';
-lrow.innerHTML=`<div class="lleft"><span class="lname">LOGÍSTICA</span><div class="kmwrap"><label>Distancia</label><input type="number" id="kminput" placeholder="mín. 100" min="100" step="1" oninput="onKm(this.value)" onblur="if(this.value&&parseInt(this.value)<100){this.value=100;onKm(100);}"><span class="kmhint">km</span></div>${tarifa>0?`<span class="kmhint">USD ${fmt(tarifa)}/km · desc. 30% si >100 km</span>`:'<span class="kmhint" style="color:var(--red)">⚠ tarifa no configurada → ⚙ Actualizar Costos</span>'}</div><span class="oprice" id="lprice">—</span>`;list.appendChild(lrow);
+Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;const displayName=getOptLabel(name);const dispPrice=(name==='Platea de fundación + Granítico')?platePrice(k):price;row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${displayName}</span></div><span class="oprice" id="pr_${name}">${dispPrice===0?'N/D':'USD '+fmt(dispPrice*cant)}</span>`;list.appendChild(row);});
+const tarifa=COSTOS_LOG_TARIFA[k];
+// Toggle de exportación
+const exrow=document.createElement('div');exrow.className='orow'+(exportVal?' on':'');exrow.id='or_Export';
+exrow.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_Export" onclick="togExport(true)" ${exportVal?'class="active-yes"':''}>✓</button><button id="no_Export" onclick="togExport(false)" ${!exportVal?'class="active-no"':''}>—</button></div><span class="oname">¿Con exportación? (Uruguay)</span><span class="kmhint" style="margin-left:6px">cambia tarifa logística y platea</span></div><span class="oprice" id="pr_Export">${exportVal?'Sí':'No'}</span>`;list.appendChild(exrow);
+const lrow=document.createElement('div');lrow.className='lrow';lrow.id='lrow';
+const tarifaShow=exportVal?COSTOS_LOG_TARIFA_EXPORT[k]:COSTOS_LOG_TARIFA[k];lrow.innerHTML=`<div class="lleft"><span class="lname">LOGÍSTICA</span><div class="kmwrap"><label>Distancia</label><input type="number" id="kminput" placeholder="mín. 100" min="100" step="1" oninput="onKm(this.value)" onblur="if(this.value&&parseInt(this.value)<100){this.value=100;onKm(100);}"><span class="kmhint">km</span></div><span class="kmhint" id="tarifaHint">${tarifaShow>0?`USD ${fmt(tarifaShow)}/km${exportVal?' · exportación':' · desc. 30% si >100 km'}`:'⚠ tarifa no configurada → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="lprice">—</span>`;list.appendChild(lrow);
 const hasMontaje=COSTOS_MONTAJE[k].some(v=>v>0);const mrow=document.createElement('div');mrow.className='orow'+(hasMontaje?'':' na');mrow.id='or_Montaje';
 mrow.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_Montaje" onclick="togOpt('Montaje',true)" ${!hasMontaje?'disabled':''}>✓</button><button id="no_Montaje" onclick="togOpt('Montaje',false)" ${!hasMontaje?'disabled':''} class="active-no">—</button></div><span class="oname">Montaje</span><span class="kmhint" style="margin-left:6px">${hasMontaje?'(según km ingresados)':'⚠ tramos no configurados → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="pr_Montaje">—</span>`;list.appendChild(mrow);}
 
-function togOpt(name,v){opts[name]=v;const row=document.getElementById('or_'+name);if(row){v?row.classList.add('on'):row.classList.remove('on');}const yb=document.getElementById('yes_'+name);const nb=document.getElementById('no_'+name);if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);if(name==='Montaje'&&kmVal){const mp=v?calcMontaje(sel,kmVal):0;document.getElementById('pr_Montaje').textContent=(v&&mp>0)?'USD '+fmt(mp):'—';}upd();}
+function togExport(v){
+  exportVal=v;
+  const row=document.getElementById('or_Export');if(row){v?row.classList.add('on'):row.classList.remove('on');}
+  const yb=document.getElementById('yes_Export');const nb=document.getElementById('no_Export');
+  if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);
+  const pr=document.getElementById('pr_Export');if(pr)pr.textContent=v?'Sí':'No';
+  // Update platea price display if shown
+  const cant=getCant();
+  const plateaRow=document.getElementById('pr_Platea de fundación + Granítico');
+  if(plateaRow){plateaRow.textContent='USD '+fmt(platePrice(sel)*cant);}
+  // Update logistics price display
+  const lp=kmVal?calcLog(sel,kmVal):0;
+  const lpEl=document.getElementById('lprice');
+  if(lpEl)lpEl.textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';
+  // Update tarifa hint text
+  const tarifaShow=v?COSTOS_LOG_TARIFA_EXPORT[sel]:COSTOS_LOG_TARIFA[sel];
+  const hint=document.getElementById('tarifaHint');
+  if(hint&&tarifaShow>0){hint.textContent=`USD ${fmt(tarifaShow)}/km${v?' · exportación':' · desc. 30% si >100 km'}`;}
+  upd();
+}
 
 function onKm(v){var raw=parseInt(v);if(raw>0&&raw<100){var inp=document.getElementById('kminput');if(inp){inp.style.borderColor='var(--red)';}kmVal=null;}else{var inp2=document.getElementById('kminput');if(inp2)inp2.style.borderColor='';kmVal=(!v||v===''||isNaN(raw)||raw<100)?null:raw;}const cant=getCant();const lp=kmVal?calcLog(sel,kmVal):0;const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;document.getElementById('lprice').textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';document.getElementById('pr_Montaje').textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmt(mp*cant):'—';upd();}
 
@@ -1007,7 +1035,7 @@ function getOptLabelPDF(name){
   const map=LINEA[sel]==='madera'?OPT_LABELS_PDF_MADERA:OPT_LABELS_PDF_MODULAR;
   return map[name]||name;
 }
-function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0)items.push({label:getOptLabel(n),pdfLabel:getOptLabelPDF(n),precio:d.op[n]});});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:'Logística',pdfLabel:'Logística',precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:'Montaje',pdfLabel:'Montaje',precio:mp});}return items;}
+function getItems(){const d=COSTOS[sel];const items=[{label:`Precio base — ${LINEA[sel]==="madera"?"LABO Madera":"LABO Modular"} ${DNAME[sel]} (${d.sup} m²)`,precio:d.pb,isBase:true}];Object.entries(opts).forEach(([n,on])=>{if(n==='Montaje')return;if(on&&d.op[n]>0){const precio=(n==='Platea de fundación + Granítico')?platePrice(sel):d.op[n];items.push({label:getOptLabel(n),pdfLabel:getOptLabelPDF(n),precio:precio});}});if(kmVal&&kmVal>=100){const lp=calcLog(sel,kmVal);if(lp>0)items.push({label:'Logística',pdfLabel:'Logística',precio:lp});}if(opts['Montaje']&&kmVal&&kmVal>=1){const mp=calcMontaje(sel,kmVal);if(mp>0)items.push({label:'Montaje',pdfLabel:'Montaje',precio:mp});}return items;}
 
 function refreshOptPrices(){
   if(!sel)return;
@@ -1707,7 +1735,7 @@ function saveLead(){
       linea:LINEA[sel]==='madera'?'LABO Madera':'LABO Modular',
       modelo:DNAME[sel],sup:COSTOS[sel].sup,cant:cant,total:tot,
       pago:document.getElementById('oPago').value,plazo:gv('oPlazo'),
-      etapa:'Cotizado',notas:gv('oNotas'),actividad:[]
+      etapa:'Cotizado',notas:gv('oNotas'),actividad:[],exportacion:exportVal
     };
     _spSaveLead(lead).catch(function(e){
       // Fallback to localStorage if SP fails
