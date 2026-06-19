@@ -82,6 +82,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--
 .cot-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .cot-card{border:1px solid var(--border);overflow:hidden}
 .cot-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:#F5F3ED;border-bottom:1px solid var(--border)}
+.cot-pdf-btn{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;padding:3px 8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;text-decoration:none;border-radius:2px;transition:all .15s;white-space:nowrap}
+.cot-pdf-btn:hover{background:var(--blue);color:var(--white)}
+.cot-pdf-none{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;color:var(--mid);opacity:.6}
 .cot-card-num{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);letter-spacing:1px}
 .cot-card-date{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid)}
 .cot-card-body{padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -1078,10 +1081,15 @@ function openDetail(id){
       var d=c.fecha?new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
       var lbCls=(c.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
       var notasHtml=c.notas&&c.notas!=='—'?'<div class="cot-card-field" style="grid-column:1/-1"><label>Notas</label><span>'+esc(c.notas)+'</span></div>':'';
+      var pdfBtn=c.pdfUrl
+        ? '<a class="cot-pdf-btn" href="'+esc(c.pdfUrl)+'" target="_blank" rel="noopener" title="Abrir PDF en SharePoint'+(c.pdfName?' ('+esc(c.pdfName)+')':'')+'">PDF'+(c.pdfVersion?' v'+esc(String(c.pdfVersion)):'')+' ↗</a>'
+        : '<span class="cot-pdf-none">sin PDF</span>';
       return '<div class="cot-card">'+
         '<div class="cot-card-hdr">'+
           '<span class="cot-card-num">OC N\u00b0 '+esc(c.num||'—')+'</span>'+
-          '<span class="cot-card-date">'+d+'</span>'+
+          '<span style="display:flex;align-items:center;gap:8px">'+
+            '<span class="cot-card-date">'+d+'</span>'+pdfBtn+
+          '</span>'+
         '</div>'+
         '<div class="cot-card-body">'+
           '<div class="cot-card-field"><label>L\u00ednea</label><span><span class="lb '+lbCls+'">'+esc(c.linea||'—')+'</span></span></div>'+

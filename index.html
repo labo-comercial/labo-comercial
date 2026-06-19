@@ -1157,91 +1157,84 @@ async function _doGeneratePDF(){
   var doc=_buildOfferPDF();
   var linea=LINEA[sel];
   var catalogKey=DNAME[sel];
-  // Save lead to CRM storage
-  saveLead();
   var hasCatalog=(linea==='madera'||linea==='modular')&&CATALOG_MODEL_PAGES[linea]&&CATALOG_MODEL_PAGES[linea][catalogKey];
+  // Obtener los bytes finales del PDF (con catálogo mergeado si corresponde)
+  var finalBytes;
   if(hasCatalog&&typeof PDFLib!=='undefined'){
-    _mergePDFs(doc,linea,catalogKey);
+    try{
+      finalBytes=await _buildMergedBytes(doc,linea,catalogKey);
+    }catch(e){
+      console.error('Merge error, usando oferta sin catálogo:',e);
+      finalBytes=doc.output('arraybuffer');
+    }
   } else {
-    var numPad=(gv('oNum')||'SN').replace(/[\\/\/:*?"<>|]/g,'-').trim();
-    var clientName=(gv('cNombre')||'Cliente').replace(/[\\/\/:*?"<>|]/g,'-').trim();
-    doc.save(numPad+' '+clientName+' - '+DNAME[sel]+'.pdf');
+    finalBytes=doc.output('arraybuffer');
   }
+  await _finishPDF(finalBytes);
 }
 
-async function _mergePDFs(jspdfDoc,linea,modelKey){
-  try{
-    // Download catalog PDF from SharePoint via Graph API
-    await _initMSAL();await _getSiteDrive();
-    var catFileName=linea==='modular'?'cat_modular.pdf':'cat_madera.pdf';
-    var catPath=MSAL_CONFIG.dataFolder+'/'+catFileName;
-    console.log('Buscando catálogo en:', '/drives/'+_driveId+'/root:/'+catPath+':/content');
-    console.log('driveId:', _driveId);
-    console.log('siteId:', _siteId);
-    var catRes=await _gFetch('/drives/'+_driveId+'/root:/'+catPath+':/content');
-    console.log('Respuesta catálogo:', catRes.status, catRes.statusText);
-    if(!catRes.ok){
-      // Try listing folder to debug
-      var listRes=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+':/children');
-      var listJson=listRes.ok?await listRes.json():{error:'no se pudo listar'};
-      var files=listJson.value?listJson.value.map(function(f){return f.name;}).join(', '):'carpeta no encontrada';
-      console.log('Archivos en LABO-CRM:', files);
-      throw new Error('Catálogo no encontrado en SharePoint ('+catFileName+'). Archivos en LABO-CRM: '+files+'. Subilo a la carpeta LABO-CRM.');
-    }
-    var catBuffer=await catRes.arrayBuffer();
+// Devuelve los bytes del PDF (oferta + catálogo). No descarga ni sube.
+async function _buildMergedBytes(jspdfDoc,linea,modelKey){
+  await _initMSAL();await _getSiteDrive();
+  var catFileName=linea==='modular'?'cat_modular.pdf':'cat_madera.pdf';
+  var catPath=MSAL_CONFIG.dataFolder+'/'+catFileName;
+  var catRes=await _gFetch('/drives/'+_driveId+'/root:/'+catPath+':/content');
+  if(!catRes.ok){
+    var listRes=await _gFetch('/drives/'+_driveId+'/root:/'+MSAL_CONFIG.dataFolder+':/children');
+    var listJson=listRes.ok?await listRes.json():{error:'no se pudo listar'};
+    var files=listJson.value?listJson.value.map(function(f){return f.name;}).join(', '):'carpeta no encontrada';
+    throw new Error('Catálogo no encontrado en SharePoint ('+catFileName+'). Archivos en LABO-CRM: '+files+'. Subilo a la carpeta LABO-CRM.');
+  }
+  var catBuffer=await catRes.arrayBuffer();
+  var offerBytes=jspdfDoc.output('arraybuffer');
+  var offerDoc=await PDFLib.PDFDocument.load(offerBytes);
+  var catDoc=await PDFLib.PDFDocument.load(catBuffer);
+  var merged=await PDFLib.PDFDocument.create();
+  var afterPages=linea==='modular'?CATALOG_COMMON_AFTER_MODULAR:CATALOG_COMMON_AFTER_MADERA;
+  var introPgs=await merged.copyPages(catDoc,CATALOG_COMMON_BEFORE);
+  introPgs.forEach(function(p){merged.addPage(p);});
+  var modPgs=await merged.copyPages(catDoc,CATALOG_MODEL_PAGES[linea][modelKey]);
+  modPgs.forEach(function(p){merged.addPage(p);});
+  var closePgs=await merged.copyPages(catDoc,afterPages);
+  closePgs.forEach(function(p){merged.addPage(p);});
+  var catPage0=catDoc.getPage(0);
+  var catSize=catPage0.getSize();
+  var offerIndices=offerDoc.getPageIndices();
+  for(var oi=0;oi<offerIndices.length;oi++){
+    var cp=await merged.copyPages(offerDoc,[offerIndices[oi]]);
+    var op=cp[0];merged.addPage(op);
+    var os=op.getSize();
+    op.setSize(catSize.width,catSize.height);
+    op.scaleContent(catSize.width/os.width,catSize.height/os.height);
+  }
+  return await merged.save(); // Uint8Array
+}
 
-    // Merge with offer
-    var offerBytes=jspdfDoc.output('arraybuffer');
-    var offerDoc=await PDFLib.PDFDocument.load(offerBytes);
-    var catDoc=await PDFLib.PDFDocument.load(catBuffer);
-    var merged=await PDFLib.PDFDocument.create();
-    // Catalog first: common intro + model pages + common close
-    var afterPages=linea==='modular'?CATALOG_COMMON_AFTER_MODULAR:CATALOG_COMMON_AFTER_MADERA;
-    var introPgs=await merged.copyPages(catDoc,CATALOG_COMMON_BEFORE);
-    introPgs.forEach(function(p){merged.addPage(p);});
-    var modPgs=await merged.copyPages(catDoc,CATALOG_MODEL_PAGES[linea][modelKey]);
-    modPgs.forEach(function(p){merged.addPage(p);});
-    var closePgs=await merged.copyPages(catDoc,afterPages);
-    closePgs.forEach(function(p){merged.addPage(p);});
-    // Offer at end — scaled to catalog page size
-    var catPage0=catDoc.getPage(0);
-    var catSize=catPage0.getSize();
-    var offerIndices=offerDoc.getPageIndices();
-    for(var oi=0;oi<offerIndices.length;oi++){
-      var cp=await merged.copyPages(offerDoc,[offerIndices[oi]]);
-      var op=cp[0];merged.addPage(op);
-      var os=op.getSize();
-      op.setSize(catSize.width,catSize.height);
-      op.scaleContent(catSize.width/os.width,catSize.height/os.height);
-    }
-    var mergedBytes=await merged.save();
-    var blob=new Blob([mergedBytes],{type:'application/pdf'});
+// Rutina común: descarga local + sube a SharePoint (siempre) + guarda lead con el link
+async function _finishPDF(finalBytes){
+  var numPad=(gv('oNum')||'SN').replace(/[\/\\:*?"<>|]/g,'-').trim();
+  var clientName=(gv('cNombre')||'Cliente').replace(/[\/\\:*?"<>|]/g,'-').trim();
+  var dlName=numPad+' '+clientName+' - '+DNAME[sel]+'.pdf';
+  // 1) Descarga local para el usuario
+  try{
+    var blob=new Blob([finalBytes],{type:'application/pdf'});
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
-    var numPad=(gv('oNum')||'SN').replace(/[\/\/:*?"<>|]/g,'-').trim();
-    var clientName=(gv('cNombre')||'Cliente').replace(/[\/\/:*?"<>|]/g,'-').trim();
-    a.href=url;a.download=numPad+' '+clientName+' - '+DNAME[sel]+'.pdf';
-    document.body.appendChild(a);a.click();
-    document.body.removeChild(a);URL.revokeObjectURL(url);
+    a.href=url;a.download=dlName;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(e){console.warn('Descarga local falló:',e);}
+  // 2) Subida a SharePoint (siempre) y 3) guardar lead con el link
+  var pdfMeta=null;
+  var meta={num:gv('oNum'),cliente:gv('cNombre'),
+    linea:LINEA[sel]==='madera'?'LABO Madera':'LABO Modular',modelo:DNAME[sel]};
+  try{
+    pdfMeta=await _spUploadOfferPDF(finalBytes,meta);
   }catch(e){
-    console.error('Merge error:',e);
-    // If auth error and Safari, token may have just been obtained via redirect
-    // Wait 2s and retry once before giving up
-    if(e.message&&e.message.includes('401')&&_gToken===null){
-      console.log('Auth error — waiting for token and retrying...');
-      await new Promise(function(r){setTimeout(r,2000);});
-      try{
-        await _initMSAL();
-        if(_gToken){
-          await _mergePDFs(jspdfDoc,linea,modelKey);
-          return;
-        }
-      }catch(e2){console.warn('Retry failed:',e2);}
-    }
-    var numPad=(gv('oNum')||'SN').replace(/[\/\/:*?"<>|]/g,'-').trim();
-    var clientName=(gv('cNombre')||'Cliente').replace(/[\/\/:*?"<>|]/g,'-').trim();
-    jspdfDoc.save(numPad+' '+clientName+' - '+DNAME[sel]+'.pdf');
+    console.error('[PDF] ✗ No se pudo subir a SharePoint:',e);
+    alert('El PDF se descargó, pero no se pudo subir a SharePoint:\n'+e.message+'\nEl lead se guardará igual sin el archivo adjunto.');
   }
+  await saveLead(pdfMeta);
 }
 
 
@@ -1662,12 +1655,64 @@ async function _getSiteDrive(){
   _driveId=dJson.id;
   console.log('siteId:', _siteId, 'driveId:', _driveId);
 }
+// ---- Subida del PDF de la oferta a SharePoint ----
+// Sanitiza un texto para usarlo como nombre de carpeta/archivo válido en SharePoint
+function _spSanitize(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\\/:*?"<>|#%]/g,'-').replace(/\s+/g,' ').trim();
+}
+// Construye el nombre de carpeta: "OC0168 - Cliente - LABO Modular - Studio"
+function _spOfferFolderName(meta){
+  var num=_spSanitize(meta.num||'SN');
+  var cli=_spSanitize(meta.cliente||'Cliente');
+  var lin=_spSanitize(meta.linea||'');
+  var prod=_spSanitize(meta.modelo||'');
+  return ('OC'+num+' - '+cli+' - '+lin+' - '+prod).replace(/\s*-\s*-\s*/g,' - ').replace(/[ -]+$/,'').trim();
+}
+// Cuenta cuántos PDFs hay ya en la carpeta para asignar el nº de versión (v1, v2, ...)
+async function _spNextVersion(folderPath){
+  try{
+    var r=await _gFetch('/drives/'+_driveId+'/root:/'+encodeURI(folderPath)+':/children?$select=name');
+    if(!r.ok) return 1; // carpeta no existe aún -> primera versión
+    var j=await r.json();
+    var pdfs=(j.value||[]).filter(function(f){return /\.pdf$/i.test(f.name);});
+    return pdfs.length+1;
+  }catch(e){ console.warn('[PDF] No se pudo contar versiones:',e); return 1; }
+}
+// Sube los bytes del PDF a SharePoint y devuelve {webUrl, path, name, version}
+// Usa fetch directo (no _gFetch) porque el contenido es binario, no JSON.
+async function _spUploadOfferPDF(pdfBytes, meta){
+  await _initMSAL(); await _getSiteDrive();
+  // refrescar token
+  try{
+    var acc=_msalInst.getAllAccounts();
+    if(acc.length>0){
+      var rt=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc[0]});
+      _gToken=rt.accessToken;
+    }
+  }catch(e){console.warn('[PDF] token refresh:',e);}
+  var folder=MSAL_CONFIG.dataFolder+'/Ofertas/'+_spOfferFolderName(meta);
+  var version=await _spNextVersion(folder);
+  var fileName='v'+version+' - OC'+_spSanitize(meta.num||'SN')+' - '+_spSanitize(meta.cliente||'Cliente')+'.pdf';
+  var fullPath=folder+'/'+fileName;
+  var uploadUrl='https://graph.microsoft.com/v1.0/drives/'+_driveId+'/root:/'+encodeURI(fullPath)+':/content';
+  var res=await fetch(uploadUrl,{
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+_gToken,'Content-Type':'application/pdf'},
+    body:pdfBytes
+  });
+  if(!res.ok){ throw new Error('Subida del PDF falló: '+res.status+' '+(await res.text()).substring(0,200)); }
+  var j=await res.json();
+  console.log('[PDF] ✓ Subido a SharePoint:',fullPath,'->',j.webUrl);
+  return {webUrl:j.webUrl||'', path:fullPath, name:fileName, version:version};
+}
 async function _spSaveLead(lead){
   // Build cotización object
   const cot={
     id:'cot_'+Date.now(),
     fecha:lead.fecha,num:lead.num,linea:lead.linea,modelo:lead.modelo,
-    sup:lead.sup,cant:lead.cant,total:lead.total,pago:lead.pago,plazo:lead.plazo,notas:lead.notas
+    sup:lead.sup,cant:lead.cant,total:lead.total,pago:lead.pago,plazo:lead.plazo,notas:lead.notas,
+    pdfUrl:lead.pdfUrl||'',pdfPath:lead.pdfPath||'',pdfName:lead.pdfName||'',pdfVersion:lead.pdfVersion||null
   };
   const clienteName=(lead.cliente||'').trim();
   console.log('[CRM] Guardando lead en Supabase:',clienteName,'OC',lead.num);
@@ -1717,7 +1762,7 @@ async function _spSaveLead(lead){
   }catch(e){console.error('[CRM] ✗ _spSaveLead excepción:',e);}
 }
 
-function saveLead(){
+function saveLead(pdfMeta){
   try{
     var items=getItems();
     var cant=parseInt(document.getElementById('cant').value)||1;
@@ -1730,14 +1775,16 @@ function saveLead(){
       linea:LINEA[sel]==='madera'?'LABO Madera':'LABO Modular',
       modelo:DNAME[sel],sup:COSTOS[sel].sup,cant:cant,total:tot,
       pago:document.getElementById('oPago').value,plazo:gv('oPlazo'),
-      etapa:'Cotizado',notas:gv('oNotas'),actividad:[],exportacion:exportVal
+      etapa:'Cotizado',notas:gv('oNotas'),actividad:[],exportacion:exportVal,
+      pdfUrl:(pdfMeta&&pdfMeta.webUrl)||'',pdfPath:(pdfMeta&&pdfMeta.path)||'',
+      pdfName:(pdfMeta&&pdfMeta.name)||'',pdfVersion:(pdfMeta&&pdfMeta.version)||null
     };
-    _spSaveLead(lead).catch(function(e){
+    return _spSaveLead(lead).catch(function(e){
       // Fallback to localStorage if SP fails
       console.warn('SP save failed, using localStorage:',e);
       try{var ex=[];try{var r=localStorage.getItem('labo_crm_leads');if(r)ex=JSON.parse(r);}catch(e2){}ex.unshift(lead);localStorage.setItem('labo_crm_leads',JSON.stringify(ex));}catch(e3){}
     });
-  }catch(e){console.warn('saveLead error:',e);}
+  }catch(e){console.warn('saveLead error:',e);return Promise.resolve();}
 }
 
 function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
