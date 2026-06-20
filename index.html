@@ -2,16 +2,290 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>LABO — Cotizador Comercial</title>
-  <link rel="apple-touch-icon" sizes="512x512" href="./icon_cotizador.png">
-  <link rel="apple-touch-icon" href="./icon_cotizador.png">
-  <link rel="icon" type="image/png" href="./icon_cotizador.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LABO — Cotizador & CRM</title>
+  <link rel="apple-touch-icon" sizes="512x512" href="./icon_crm.png">
+  <link rel="apple-touch-icon" href="./icon_crm.png">
+  <link rel="icon" type="image/png" href="./icon_crm.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
+:root{
+  --black:#0A0A0A;--white:#F5F4F0;--grey:#E8E6E0;--mid:#9A9690;
+  --green:#1E8449;--red:#C0392B;--amber:#D4870A;--blue:#1A5276;--purple:#7D3C98;
+  --border:#D8D5CE;--card:#FAFAF7;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--black);min-height:100vh}
+
+/* ── HEADER ── */
+.hdr{background:var(--black);color:var(--white);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.hdr-right{display:flex;align-items:center;gap:16px}
+.hdr-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;opacity:.4}
+.hdr-actions{display:flex;gap:6px}
+.btn-sm{padding:5px 12px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all .15s}
+.btn-sm:hover{background:rgba(255,255,255,.1)}
+.btn-sm.primary{background:var(--white);color:var(--black);border-color:var(--white)}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:2px solid var(--black);background:var(--white);padding:0 24px}
+.tab{padding:14px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--mid);transition:all .15s}
+.tab:hover{color:var(--black)}
+.tab.active{color:var(--black);border-bottom-color:var(--black)}
+
+/* ── LAYOUT ── */
+.tab-content{display:none}
+.tab-content.active{display:block}
+.page{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 95px)}
+.sidebar{background:#F0EEE8;border-right:1px solid var(--border);padding:20px 0}
+.content{padding:24px;overflow:auto}
+
+/* ── SIDEBAR ── */
+.s-section{padding:0 12px;margin-bottom:20px}
+.s-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mid);text-transform:uppercase;margin-bottom:8px;padding:0 4px}
+.s-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:500;transition:background .1s}
+.s-item:hover{background:rgba(0,0,0,.05)}
+.s-item.active{background:var(--black);color:var(--white)}
+.s-count{font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:.6}
+.s-divider{height:1px;background:var(--border);margin:6px 12px}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi-grid-2{grid-template-columns:repeat(2,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);padding:16px 18px}
+.kpi.dark{background:var(--black);border-color:var(--black)}
+.kpi.green{background:#D5F5E3;border-color:#A9DFBF}
+.kpi.amber{background:#FEF9E7;border-color:#F9E79F}
+.kpi.red{background:#FADBD8;border-color:#F5B7B1}
+.kpi-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:6px}
+.kpi.dark .kpi-label{color:rgba(255,255,255,.4)}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:500;line-height:1}
+.kpi.dark .kpi-value{color:var(--white)}
+.kpi.green .kpi-value{color:var(--green)}
+.kpi.amber .kpi-value{color:#7D6608}
+.kpi.red .kpi-value{color:var(--red)}
+.kpi-sub{font-size:11px;color:var(--mid);margin-top:5px}
+.kpi.dark .kpi-sub{color:rgba(255,255,255,.3)}
+.kpi-explain{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;color:var(--mid);margin-bottom:4px;line-height:1.4}
+.kpi.dark .kpi-explain{color:rgba(255,255,255,.3)}
+.kpi.clickable{cursor:pointer;transition:opacity .15s}
+.kpi.clickable:hover{opacity:.85}
+.kpi.green .kpi-explain{color:#1a6035}
+.kpi.amber .kpi-explain{color:#7D6608}
+.kpi.red .kpi-explain{color:#7a1f1a}
+
+/* Lead number & cotización badge */
+.lead-num{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);margin-right:4px;letter-spacing:.5px}
+.cot-badge{display:inline-block;background:var(--black);color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:8px;padding:1px 5px;margin-left:3px;vertical-align:middle;border-radius:2px}
+
+/* Cotizaciones list */
+.cot-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.cot-card{border:1px solid var(--border);overflow:hidden}
+.cot-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:#F5F3ED;border-bottom:1px solid var(--border)}
+.cot-pdf-btn{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;padding:3px 8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;text-decoration:none;border-radius:2px;transition:all .15s;white-space:nowrap}
+.cot-pdf-btn:hover{background:var(--blue);color:var(--white)}
+.cot-pdf-none{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;color:var(--mid);opacity:.6}
+.cot-card-num{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);letter-spacing:1px}
+.cot-card-date{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid)}
+.cot-card-body{padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cot-card-field label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--mid);text-transform:uppercase;display:block;margin-bottom:2px}
+.cot-card-field span{font-size:12px;font-weight:500}
+.cot-card-total{background:var(--black);color:var(--white);padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
+.cot-card-total-label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;opacity:.4}
+.cot-card-total-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500}
+
+/* Activity timeline */
+.act-timeline{display:flex;flex-direction:column;gap:0;margin-top:12px;padding-left:4px}
+.act-entry{display:flex;gap:14px;padding-bottom:16px;position:relative}
+.act-entry::before{content:'';position:absolute;left:8px;top:14px;bottom:0;width:1px;background:var(--border)}
+.act-entry:last-child::before{display:none}
+.act-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid var(--border);background:var(--white);z-index:1;margin-top:1px}
+.act-dot.is-etapa{background:var(--black);color:var(--white);border-color:var(--black)}
+.act-dot.is-nota{background:#F5F3ED;color:var(--mid)}
+.act-body{flex:1}
+.act-fecha-txt{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mid);margin-bottom:3px;letter-spacing:.5px}
+.act-texto-txt{font-size:12px;line-height:1.5;color:var(--black);background:var(--card);border:1px solid var(--border);padding:7px 10px}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── PIPELINE BAR ── */
+.pipeline-bar{height:8px;display:flex;gap:2px;margin-bottom:8px;border-radius:1px;overflow:hidden}
+.pb-seg{transition:flex .4s}
+.pipeline-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.pl-item{display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid)}
+.pl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── FUNNEL ── */
+.funnel{display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
+.funnel-row{display:flex;align-items:center;gap:10px}
+.funnel-label{font-family:'IBM Plex Mono',monospace;font-size:10px;width:130px;flex-shrink:0}
+.funnel-bar-wrap{flex:1;background:#EAE8E2;height:28px;position:relative}
+.funnel-fill{height:100%;transition:width .4s;display:flex;align-items:center;padding-left:10px}
+.funnel-fill span{font-family:'IBM Plex Mono',monospace;font-size:10px;color:white;font-weight:500}
+.funnel-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);width:80px;text-align:right;flex-shrink:0}
+.funnel-arrow{font-size:10px;color:var(--mid);width:24px;text-align:center;flex-shrink:0}
+
+/* ── CHARTS GRID ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-box{background:var(--card);border:1px solid var(--border);padding:16px}
+.bar-chart{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:flex;align-items:center;gap:8px}
+.bar-key{font-size:12px;width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:#EAE8E2;height:20px;position:relative}
+.bar-fill{height:100%;transition:width .4s}
+.bar-val{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);width:80px;text-align:right;flex-shrink:0}
+
+/* ── VELOCITY ── */
+.velocity-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.vel-card{background:var(--card);border:1px solid var(--border);padding:14px}
+.vel-arrow{font-size:18px;margin-bottom:4px}
+.vel-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500}
+.vel-label{font-size:11px;color:var(--mid);margin-top:4px}
+
+/* ── MOTIVOS ── */
+.motivos-list{display:flex;flex-direction:column;gap:6px}
+.motivo-row{display:flex;align-items:center;gap:8px}
+.motivo-key{font-size:12px;flex:1}
+.motivo-bar-track{width:120px;background:#EAE8E2;height:16px}
+.motivo-bar-fill{height:100%;background:var(--red);transition:width .4s}
+.motivo-pct{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);width:36px;text-align:right}
+
+/* ── FORECAST ── */
+.forecast-row{display:flex;gap:10px;margin-bottom:20px}
+.forecast-card{flex:1;background:var(--card);border:1px solid var(--border);padding:14px 16px;text-align:center}
+.forecast-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mid);text-transform:uppercase;margin-bottom:6px}
+.forecast-val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500}
+.forecast-note{font-size:10px;color:var(--mid);margin-top:4px}
+
+/* ── TREND CHART ── */
+.trend-chart{background:var(--card);border:1px solid var(--border);padding:16px;margin-bottom:20px}
+.trend-bars{display:flex;align-items:flex-end;gap:4px;height:80px;margin-top:12px}
+.trend-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:2px}
+.trend-bar{width:100%;background:var(--black);transition:height .3s;min-height:2px}
+.trend-bar-label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--mid);text-align:center}
+.trend-bar-val{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--mid)}
+
+/* ── LEADS TABLE ── */
+.table-wrap{background:var(--card);border:1px solid var(--border)}
+.table-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap}
+.table-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid)}
+.search-wrap{position:relative}
+.search-wrap input{padding:6px 10px 6px 26px;border:1px solid var(--border);background:var(--white);font-family:'IBM Plex Sans',sans-serif;font-size:12px;outline:none;width:180px}
+.search-wrap::before{content:'⌕';position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--mid);font-size:13px}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:2px solid var(--black)}
+th{padding:9px 14px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);font-weight:500;cursor:pointer;white-space:nowrap;user-select:none}
+th:hover{color:var(--black)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#F5F3ED}
+.td-bold{font-weight:600}
+.td-muted{color:var(--mid);font-size:11px}
+.td-mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.td-hot{color:var(--red);font-weight:600}
+
+/* ── TEMPERATURA ── */
+.temp{display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;font-weight:500}
+.temp-caliente{background:#FDEBD0;color:#7D3C00}
+.temp-tibio{background:#FEF9E7;color:#7D6608}
+.temp-frio{background:#D6EAF8;color:#1A5276}
+.temp-score{font-size:10px}
+
+/* ── ETAPA ── */
+.etapa{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;border:none;font-weight:500;transition:opacity .15s}
+.etapa:hover{opacity:.8}
+.etapa-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.e-cotizado{background:#D6E4F7;color:#1A5276}.e-cotizado .etapa-dot{background:#1A5276}
+.e-propuesta{background:#FAE5D3;color:#7D4E27}.e-propuesta .etapa-dot{background:#D4870A}
+.e-negociacion{background:#E8DAEF;color:#5B2C6F}.e-negociacion .etapa-dot{background:#7D3C98}
+.e-ganado{background:#D5F5E3;color:#1E8449}.e-ganado .etapa-dot{background:#1E8449}
+.e-perdido{background:#FADBD8;color:#922B21}.e-perdido .etapa-dot{background:#C0392B}
+
+/* ── DROPDOWN ── */
+.etapa-dropdown{position:relative;display:inline-block}
+.etapa-menu{display:none;position:absolute;top:100%;left:0;background:var(--white);border:1px solid var(--border);z-index:100;min-width:170px;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.etapa-dropdown.open .etapa-menu{display:block}
+.etapa-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:transparent;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;transition:background .1s}
+.etapa-menu button:hover{background:#F0EEE8}
+
+/* ── LINEA BADGE ── */
+.lb{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 6px}
+.lb-madera{background:#F0E6D3;color:#7D4E27}
+.lb-modular{background:#D6E4F7;color:#1A5276}
+
+/* ── DETAIL PANEL ── */
+.detail-overlay{display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:flex-end}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--white);width:440px;height:100vh;overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.15)}
+.dp-hdr{background:var(--black);color:var(--white);padding:18px 22px;display:flex;align-items:center;justify-content:space-between}
+.dp-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.dp-close{background:none;border:none;color:var(--white);font-size:18px;cursor:pointer;opacity:.5;line-height:1}
+.dp-close:hover{opacity:1}
+.dp-body{padding:20px}
+.dp-section{margin-bottom:20px}
+.dp-section-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dp-field label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--mid);text-transform:uppercase;display:block;margin-bottom:2px}
+.dp-field span{font-size:13px;font-weight:500}
+.dp-field.full{grid-column:1/-1}
+.dp-total{background:var(--black);color:var(--white);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dp-total-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;opacity:.4}
+.dp-total-value{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500}
+.nota-input{width:100%;padding:9px 11px;border:1px solid var(--border);background:var(--white);font-family:'IBM Plex Sans',sans-serif;font-size:13px;resize:vertical;min-height:65px;outline:none}
+.nota-input:focus{border-color:var(--black)}
+.btn-nota{width:100%;padding:9px;background:var(--black);color:var(--white);border:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;margin-top:7px}
+.btn-nota:hover{opacity:.85}
+.actividad-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.act-item{padding:8px 10px;background:#F5F3ED;border-left:3px solid var(--border);font-size:12px}
+.act-fecha{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);margin-bottom:2px}
+
+/* ── MOTIVO PERDIDA MODAL ── */
+.modal-overlay{display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.6);z-index:300;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--white);width:380px;padding:28px}
+.modal-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.modal-options{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.modal-opt{padding:9px 12px;border:1px solid var(--border);cursor:pointer;font-size:13px;transition:all .1s}
+.modal-opt:hover{border-color:var(--black);background:#F5F3ED}
+.modal-opt.selected{border-color:var(--black);background:var(--black);color:var(--white)}
+.modal-other{width:100%;padding:8px 10px;border:1px solid var(--border);font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;margin-bottom:12px}
+.modal-other:focus{border-color:var(--black)}
+.modal-actions{display:flex;gap:8px}
+.btn-modal{flex:1;padding:10px;border:1px solid var(--black);background:transparent;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer}
+.btn-modal.primary{background:var(--black);color:var(--white)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 20px;color:var(--mid)}
+.empty-icon{font-size:28px;margin-bottom:10px;opacity:.3}
+.empty-text{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px}
+
+@media(max-width:900px){
+  .page{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-grid{grid-template-columns:1fr}
+  .velocity-grid{grid-template-columns:repeat(2,1fr)}
+  .detail-panel{width:100vw}
+}
+.cot-expand-row td{padding:0!important}
+.cot-expand-inner{background:#F8F7F3;border-top:1px solid var(--border)}
+.cot-expand-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.cot-expand-item:hover{background:#EEE}
+.cot-expand-item.cot-latest{background:#FAFAF7;font-weight:500}
+.cot-item-oc{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--mid);width:70px;flex-shrink:0}
+.cot-item-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);width:65px;flex-shrink:0}
+.cot-item-total{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;margin-left:auto}
+.cot-latest-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;background:var(--black);color:var(--white);padding:2px 6px;margin-left:6px}
+.cot-expand-footer{padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--mid);cursor:pointer;text-align:right}
+.cot-expand-footer:hover{color:var(--black)}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="./msal-browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  #tab-cotizador {
     --black: #0A0A0A;
     --white: #F5F4F0;
     --off-white: #ECEAE3;
@@ -22,9 +296,9 @@
     --red: #B03020;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  #tab-cotizador * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-  body {
+  #tab-cotizador {
     font-family: 'IBM Plex Sans', sans-serif;
     background: var(--white);
     color: var(--black);
@@ -33,7 +307,7 @@
   }
 
   /* ── HEADER ── */
-  .header {
+  #tab-cotizador .header {
     background: var(--black);
     color: var(--white);
     padding: 20px 40px;
@@ -42,16 +316,16 @@
     justify-content: space-between;
   }
 
-  .logo-mark {
+  #tab-cotizador .logo-mark {
     display:-webkit-box;display:-webkit-flex;display:flex;
     gap: 10px;row-gap: 10px;column-gap: 10px;
     align-items: center;
   }
 
   /* LABO logo as 4 geometric blocks */
-  .logo-svg { height: 28px; }
+  #tab-cotizador .logo-svg { height: 28px; }
 
-  .header-right {
+  #tab-cotizador .header-right {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 2px;
@@ -62,19 +336,19 @@
     gap: 24px;row-gap: 24px;column-gap: 24px;
   }
 
-  .step-indicator {
+  #tab-cotizador .step-indicator {
     color: var(--white);
     letter-spacing: 2px;
   }
 
   /* ── NAV STEPS ── */
-  .nav {
+  #tab-cotizador .nav {
     background: var(--black);
     border-top: 1px solid #1E1E1E;
     display:-webkit-box;display:-webkit-flex;display:flex;
   }
 
-  .nbtn {
+  #tab-cotizador .nbtn {
     flex: 1;
     padding: 13px 20px;
     border: none;
@@ -92,19 +366,19 @@
     transition: all .2s;-webkit-transition: all .2s;
     position: relative;
   }
-  .nbtn:last-child { border-right: none; }
-  .nbtn.active { color: var(--white); }
-  .nbtn.active::after {
+  #tab-cotizador .nbtn:last-child { border-right: none; }
+  #tab-cotizador .nbtn.active { color: var(--white); }
+  #tab-cotizador .nbtn.active::after {
     content: '';
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 2px;
     background: var(--white);
   }
-  .nbtn.done { color: var(--muted); }
-  .nbtn.settings { font-size: 10px; }
-  .nbtn.settings.active { color: var(--white); }
-  .nnum {
+  #tab-cotizador .nbtn.done { color: var(--muted); }
+  #tab-cotizador .nbtn.settings { font-size: 10px; }
+  #tab-cotizador .nbtn.settings.active { color: var(--white); }
+  #tab-cotizador .nnum {
     width: 20px; height: 20px;
     border-radius: 50%;
     border: 1px solid #333;
@@ -114,27 +388,27 @@
     color: #555;
     font-family: 'IBM Plex Mono', monospace;
   }
-  .nbtn.active .nnum { border-color: var(--white); color: var(--white); }
-  .nbtn.done .nnum { border-color: var(--muted); color: var(--muted); }
+  #tab-cotizador .nbtn.active .nnum { border-color: var(--white); color: var(--white); }
+  #tab-cotizador .nbtn.done .nnum { border-color: var(--muted); color: var(--muted); }
 
   /* ── CONTAINER ── */
-  .container { max-width: 1060px; margin: 0 auto; padding: 36px 24px; }
+  #tab-cotizador .container { max-width: 1060px; margin: 0 auto; padding: 36px 24px; }
 
   /* ── PANELS ── */
-  .panel { display: none; }
-  .panel.active { display: block; -webkit-animation: fadeIn .2s ease; animation: fadeIn .2s ease; }
+  #tab-cotizador .panel { display: none; }
+  #tab-cotizador .panel.active { display: block; -webkit-animation: fadeIn .2s ease; animation: fadeIn .2s ease; }
   @-webkit-keyframes fadeIn { from { opacity: 0; -webkit-transform: translateY(4px); transform: translateY(4px); } to { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; -webkit-transform: translateY(4px); transform: translateY(4px); } to { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); } }
 
   /* ── CARD ── */
-  .card {
+  #tab-cotizador .card {
     background: white;
     border: 1px solid var(--border);
     padding: 28px 32px;
     margin-bottom: 20px;
   }
 
-  .ctitle {
+  #tab-cotizador .ctitle {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 3px;
@@ -146,7 +420,7 @@
   }
 
   /* ── MODEL GRID ── */
-  .mgrid {
+  #tab-cotizador .mgrid {
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
@@ -156,13 +430,13 @@
     row-gap: 8px;
     column-gap: 8px;
   }
-  .mgrid > .mcard {
+  #tab-cotizador .mgrid > .mcard {
     -webkit-flex: 1 1 120px;
     flex: 1 1 120px;
     max-width: 160px;
   }
 
-  .mcard {
+  #tab-cotizador .mcard {
     border: 1px solid var(--border);
     padding: 16px 12px;
     cursor: pointer;
@@ -171,21 +445,21 @@
     background: var(--white);
     position: relative;
   }
-  .mcard:hover { border-color: var(--black); background: white; }
-  .mcard.selected { border-color: var(--black); background: var(--black); color: var(--white); }
+  #tab-cotizador .mcard:hover { border-color: var(--black); background: white; }
+  #tab-cotizador .mcard.selected { border-color: var(--black); background: var(--black); color: var(--white); }
 
-  .mname {
+  #tab-cotizador .mname {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 1.3rem;
     font-weight: 500;
     letter-spacing: 2px;
   }
-  .mcard.selected .mname { color: var(--white); }
-  .msup { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
-  .mcard.selected .msup { color: var(--mid); }
-  .mprice { font-size: 11px; font-weight: 500; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; }
-  .mcard.selected .mprice { color: var(--white); }
-  .cbadge {
+  #tab-cotizador .mcard.selected .mname { color: var(--white); }
+  #tab-cotizador .msup { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  #tab-cotizador .mcard.selected .msup { color: var(--mid); }
+  #tab-cotizador .mprice { font-size: 11px; font-weight: 500; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; }
+  #tab-cotizador .mcard.selected .mprice { color: var(--white); }
+  #tab-cotizador .cbadge {
     position: absolute; top: 6px; right: 6px;
     width: 16px; height: 16px;
     background: var(--white);
@@ -195,20 +469,20 @@
     align-items: center; justify-content: center;
     font-weight: 700;
   }
-  .mcard.selected .cbadge { display:-webkit-box;display:-webkit-flex;display:flex; }
+  #tab-cotizador .mcard.selected .cbadge { display:-webkit-box;display:-webkit-flex;display:flex; }
 
   /* ── FORM ── */
-  .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px;row-gap: 16px;column-gap: 16px; margin-bottom: 16px; }
-  .frow3 { grid-template-columns: 1fr 1fr 1fr; }
-  .fg { display:-webkit-box;display:-webkit-flex;display:flex; flex-direction: column; gap: 5px;row-gap: 5px;column-gap: 5px; }
-  .fg label {
+  #tab-cotizador .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px;row-gap: 16px;column-gap: 16px; margin-bottom: 16px; }
+  #tab-cotizador .frow3 { grid-template-columns: 1fr 1fr 1fr; }
+  #tab-cotizador .fg { display:-webkit-box;display:-webkit-flex;display:flex; flex-direction: column; gap: 5px;row-gap: 5px;column-gap: 5px; }
+  #tab-cotizador .fg label {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
   }
-  .fg input, .fg select, .fg textarea {
+  #tab-cotizador .fg input, #tab-cotizador .fg select, #tab-cotizador .fg textarea {
     padding: 9px 12px;
     border: 1px solid var(--border);
     background: var(--white);
@@ -219,13 +493,13 @@
     transition: border .15s;-webkit-transition: border .15s;
     border-radius: 0;
   }
-  .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--black); }
-  .fg textarea { resize: vertical; min-height: 72px; }
+  #tab-cotizador .fg input:focus, #tab-cotizador .fg select:focus, #tab-cotizador .fg textarea:focus { border-color: var(--black); }
+  #tab-cotizador .fg textarea { resize: vertical; min-height: 72px; }
 
   /* ── OPTIONS ── */
-  .olist { display:-webkit-box;display:-webkit-flex;display:flex; flex-direction: column; gap: 6px;row-gap: 6px;column-gap: 6px; }
+  #tab-cotizador .olist { display:-webkit-box;display:-webkit-flex;display:flex; flex-direction: column; gap: 6px;row-gap: 6px;column-gap: 6px; }
 
-  .orow {
+  #tab-cotizador .orow {
     display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
     padding: 11px 14px;
     border: 1px solid var(--border);
@@ -233,11 +507,11 @@
     gap: 12px;row-gap: 12px;column-gap: 12px;
     transition: all .15s;-webkit-transition: all .15s;
   }
-  .orow.on { border-color: var(--black); background: white; }
-  .orow.na { opacity: .3; pointer-events: none; }
-  .oleft { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 10px;row-gap: 10px;column-gap: 10px; flex: 1; }
-  .oname { font-size: 12px; font-weight: 400; }
-  .oprice {
+  #tab-cotizador .orow.on { border-color: var(--black); background: white; }
+  #tab-cotizador .orow.na { opacity: .3; pointer-events: none; }
+  #tab-cotizador .oleft { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 10px;row-gap: 10px;column-gap: 10px; flex: 1; }
+  #tab-cotizador .oname { font-size: 12px; font-weight: 400; }
+  #tab-cotizador .oprice {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
     font-weight: 500;
@@ -247,13 +521,13 @@
     color: var(--black);
   }
 
-  .toggle-btn {
+  #tab-cotizador .toggle-btn {
     display:-webkit-box;display:-webkit-flex;display:flex;
     border: 1px solid var(--border);
     overflow: hidden;
     flex-shrink: 0;
   }
-  .toggle-btn button {
+  #tab-cotizador .toggle-btn button {
     padding: 4px 10px;
     border: none;
     background: white;
@@ -263,66 +537,66 @@
     transition: all .12s;-webkit-transition: all .12s;
     color: var(--muted);
   }
-  .toggle-btn button.active-yes { background: var(--black); color: var(--white); }
-  .toggle-btn button.active-no { background: var(--off-white); color: var(--muted); }
+  #tab-cotizador .toggle-btn button.active-yes { background: var(--black); color: var(--white); }
+  #tab-cotizador .toggle-btn button.active-no { background: var(--off-white); color: var(--muted); }
 
   /* Logistics row */
-  .lrow {
+  #tab-cotizador .lrow {
     display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
     padding: 11px 14px;
     border: 1px solid var(--black);
     background: white;
     gap: 12px;row-gap: 12px;column-gap: 12px; flex-wrap: wrap;
   }
-  .lleft { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 10px;row-gap: 10px;column-gap: 10px; flex: 1; flex-wrap: wrap; }
-  .lname { font-size: 12px; font-weight: 500; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
-  .kmwrap { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 6px;row-gap: 6px;column-gap: 6px; }
-  .kmwrap label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-  .kmwrap input { width: 90px; padding: 5px 8px; border: 1px solid var(--border); background: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; outline: none; transition: border .15s;-webkit-transition: border .15s; border-radius: 0; }
-  .kmwrap input:focus { border-color: var(--black); }
-  .kmhint { font-size: 11px; color: var(--muted); }
+  #tab-cotizador .lleft { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 10px;row-gap: 10px;column-gap: 10px; flex: 1; flex-wrap: wrap; }
+  #tab-cotizador .lname { font-size: 12px; font-weight: 500; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+  #tab-cotizador .kmwrap { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 6px;row-gap: 6px;column-gap: 6px; }
+  #tab-cotizador .kmwrap label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  #tab-cotizador .kmwrap input { width: 90px; padding: 5px 8px; border: 1px solid var(--border); background: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; outline: none; transition: border .15s;-webkit-transition: border .15s; border-radius: 0; }
+  #tab-cotizador .kmwrap input:focus { border-color: var(--black); }
+  #tab-cotizador .kmhint { font-size: 11px; color: var(--muted); }
 
   /* Quantity row */
-  .crow {
+  #tab-cotizador .crow {
     display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 12px;row-gap: 12px;column-gap: 12px;
     margin-top: 16px; padding: 14px 16px;
     background: var(--off-white);
     flex-wrap: wrap;
   }
-  .crow label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
-  .crow input { width: 70px; padding: 6px 10px; border: 1px solid var(--border); font-size: 13px; font-family: 'IBM Plex Mono', monospace; outline: none; border-radius: 0; background: white; }
-  .ctotal { font-weight: 600; font-size: 12px; margin-left: auto; font-family: 'IBM Plex Mono', monospace; }
+  #tab-cotizador .crow label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  #tab-cotizador .crow input { width: 70px; padding: 6px 10px; border: 1px solid var(--border); font-size: 13px; font-family: 'IBM Plex Mono', monospace; outline: none; border-radius: 0; background: white; }
+  #tab-cotizador .ctotal { font-weight: 600; font-size: 12px; margin-left: auto; font-family: 'IBM Plex Mono', monospace; }
 
   /* Summary table */
-  .stbl { width: 100%; border-collapse: collapse; margin-top: 14px; }
-  .stbl th { text-align: left; padding: 8px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--white); background: var(--black); }
-  .stbl th.r { text-align: right; }
-  .stbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
-  .stbl tr:last-child td { border-bottom: none; }
-  .stbl .trow td { font-weight: 600; background: var(--off-white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-  .pcol { text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
-  .inccol { text-align: right; min-width: 110px; }
-  .inc-wrap { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 6px;row-gap: 6px;column-gap: 6px; justify-content: flex-end; }
-  .inc-bar { width: 50px; height: 4px; background: var(--border); flex-shrink: 0; }
-  .inc-fill { height: 100%; transition: width .3s;-webkit-transition: width .3s; }
-  .inc-fill.base { background: var(--black); }
-  .inc-fill.opt { background: var(--muted); }
-  .inc-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); min-width: 38px; text-align: right; }
+  #tab-cotizador .stbl { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  #tab-cotizador .stbl th { text-align: left; padding: 8px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--white); background: var(--black); }
+  #tab-cotizador .stbl th.r { text-align: right; }
+  #tab-cotizador .stbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
+  #tab-cotizador .stbl tr:last-child td { border-bottom: none; }
+  #tab-cotizador .stbl .trow td { font-weight: 600; background: var(--off-white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  #tab-cotizador .pcol { text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+  #tab-cotizador .inccol { text-align: right; min-width: 110px; }
+  #tab-cotizador .inc-wrap { display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; gap: 6px;row-gap: 6px;column-gap: 6px; justify-content: flex-end; }
+  #tab-cotizador .inc-bar { width: 50px; height: 4px; background: var(--border); flex-shrink: 0; }
+  #tab-cotizador .inc-fill { height: 100%; transition: width .3s;-webkit-transition: width .3s; }
+  #tab-cotizador .inc-fill.base { background: var(--black); }
+  #tab-cotizador .inc-fill.opt { background: var(--muted); }
+  #tab-cotizador .inc-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); min-width: 38px; text-align: right; }
 
   /* Total box */
-  .tbox {
+  #tab-cotizador .tbox {
     background: var(--black);
     color: var(--white);
     padding: 22px 28px;
     display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
     margin-top: 20px; flex-wrap: wrap; gap: 16px;row-gap: 16px;column-gap: 16px;
   }
-  .tbox .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
-  .tbox .amt { font-size: 2rem; font-weight: 300; letter-spacing: -1px; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
-  .tbox .nt { font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace; }
+  #tab-cotizador .tbox .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  #tab-cotizador .tbox .amt { font-size: 2rem; font-weight: 300; letter-spacing: -1px; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+  #tab-cotizador .tbox .nt { font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace; }
 
   /* Buttons */
-  .btn {
+  #tab-cotizador .btn {
     padding: 11px 24px;
     border: none;
     cursor: pointer;
@@ -335,135 +609,135 @@
     display: inline-flex; align-items: center; gap: 8px;row-gap: 8px;column-gap: 8px;
     border-radius: 0;
   }
-  .bp { background: var(--black); color: var(--white); }
-  .bp:hover { background: #333; }
-  .bo { background: transparent; color: var(--black); border: 1px solid var(--border); }
-  .bo:hover { border-color: var(--black); }
-  .ba { background: var(--red); color: white; }
-  .ba:hover { background: #8B2010; }
+  #tab-cotizador .bp { background: var(--black); color: var(--white); }
+  #tab-cotizador .bp:hover { background: #333; }
+  #tab-cotizador .bo { background: transparent; color: var(--black); border: 1px solid var(--border); }
+  #tab-cotizador .bo:hover { border-color: var(--black); }
+  #tab-cotizador .ba { background: var(--red); color: white; }
+  #tab-cotizador .ba:hover { background: #8B2010; }
 
-  .nrow { display:-webkit-box;display:-webkit-flex;display:flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+  #tab-cotizador .nrow { display:-webkit-box;display:-webkit-flex;display:flex; justify-content: space-between; align-items: center; margin-top: 28px; }
 
   /* ── PREVIEW ── */
-  .pvhdr {
+  #tab-cotizador .pvhdr {
     background: var(--black);
     color: var(--white);
     padding: 18px 28px;
     display:-webkit-box;display:-webkit-flex;display:flex; align-items: center; justify-content: space-between;
   }
-  .pvhdr-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
-  .pvcnt { padding: 36px 40px; background: white; border: 1px solid var(--border); border-top: none; }
+  #tab-cotizador .pvhdr-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  #tab-cotizador .pvcnt { padding: 36px 40px; background: white; border: 1px solid var(--border); border-top: none; }
 
   /* Preview doc styles */
-  .oempresa { margin-bottom: 28px; display:-webkit-box;display:-webkit-flex;display:flex; align-items: flex-start; justify-content: space-between; }
-  .enombre { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: 4px; color: var(--black); }
-  .esub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-  .odiv { height: 1px; background: var(--black); margin: 20px 0; }
-  .ometa { display: grid; grid-template-columns: 1fr 1fr; gap: 12px;row-gap: 12px;column-gap: 12px; margin-bottom: 24px; padding: 18px 20px; background: var(--off-white); }
-  .ometa .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
-  .ometa .val { font-size: 12px; font-weight: 500; margin-top: 2px; }
-  .ostitle { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; margin-top: 20px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-  .oitems { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-  .oitems th { background: var(--black); color: var(--white); padding: 8px 12px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
-  .oitems td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
-  .oitems .otrow td { background: var(--black); color: var(--white); font-weight: 600; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-  .oitems td:last-child, .oitems th:last-child { text-align: right; }
-  .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px;row-gap: 4px;column-gap: 4px; margin-bottom: 20px; }
-  .iitem { display:-webkit-box;display:-webkit-flex;display:flex; gap: 7px;row-gap: 7px;column-gap: 7px; font-size: 11px; align-items: flex-start; }
-  .iitem .dot { width: 5px; height: 5px; background: var(--black); flex-shrink: 0; margin-top: 4px; }
-  .nbox { background: var(--off-white); border-left: 3px solid var(--black); padding: 12px 16px; font-size: 12px; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; }
-  .oftr { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--muted); padding-top: 16px; border-top: 1px solid var(--border); }
+  #tab-cotizador .oempresa { margin-bottom: 28px; display:-webkit-box;display:-webkit-flex;display:flex; align-items: flex-start; justify-content: space-between; }
+  #tab-cotizador .enombre { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: 4px; color: var(--black); }
+  #tab-cotizador .esub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  #tab-cotizador .odiv { height: 1px; background: var(--black); margin: 20px 0; }
+  #tab-cotizador .ometa { display: grid; grid-template-columns: 1fr 1fr; gap: 12px;row-gap: 12px;column-gap: 12px; margin-bottom: 24px; padding: 18px 20px; background: var(--off-white); }
+  #tab-cotizador .ometa .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
+  #tab-cotizador .ometa .val { font-size: 12px; font-weight: 500; margin-top: 2px; }
+  #tab-cotizador .ostitle { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; margin-top: 20px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  #tab-cotizador .oitems { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+  #tab-cotizador .oitems th { background: var(--black); color: var(--white); padding: 8px 12px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
+  #tab-cotizador .oitems td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  #tab-cotizador .oitems .otrow td { background: var(--black); color: var(--white); font-weight: 600; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  #tab-cotizador .oitems td:last-child, #tab-cotizador .oitems th:last-child { text-align: right; }
+  #tab-cotizador .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px;row-gap: 4px;column-gap: 4px; margin-bottom: 20px; }
+  #tab-cotizador .iitem { display:-webkit-box;display:-webkit-flex;display:flex; gap: 7px;row-gap: 7px;column-gap: 7px; font-size: 11px; align-items: flex-start; }
+  #tab-cotizador .iitem .dot { width: 5px; height: 5px; background: var(--black); flex-shrink: 0; margin-top: 4px; }
+  #tab-cotizador .nbox { background: var(--off-white); border-left: 3px solid var(--black); padding: 12px 16px; font-size: 12px; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; }
+  #tab-cotizador .oftr { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--muted); padding-top: 16px; border-top: 1px solid var(--border); }
 
   /* ── COST EDITOR ── */
-  .cost-note { font-size: 12px; color: var(--muted); line-height: 1.65; padding: 12px 16px; background: var(--off-white); border-left: 3px solid var(--black); margin-bottom: 20px; }
-  .cost-note code { background: var(--border); padding: 1px 5px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
-  .cost-section { margin-bottom: 24px; }
-  .cost-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-  .cost-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .cost-table th { background: var(--black); color: var(--white); padding: 7px 10px; text-align: right; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; }
-  .cost-table th:first-child { text-align: left; min-width: 180px; }
-  .cost-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  .cost-table td:first-child { font-weight: 500; }
-  .cost-table td:not(:first-child) { text-align: right; }
-  .cost-table tr:nth-child(even) { background: var(--off-white); }
-  .cost-table input[type=number] { width: 88px; padding: 4px 7px; border: 1px solid var(--border); font-size: 11px; text-align: right; font-family: 'IBM Plex Mono', monospace; outline: none; border-radius: 0; }
-  .cost-table input:focus { border-color: var(--black); }
-  .cost-table input:disabled { background: #f0f0f0; opacity: .35; cursor: not-allowed; }
-  .log-formula { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); padding: 6px 10px; background: var(--off-white); margin-top: 6px; }
-  .success-msg { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--black); display: none; margin-top: 12px; padding: 10px 14px; background: var(--off-white); border-left: 3px solid var(--black); }
+  #tab-cotizador .cost-note { font-size: 12px; color: var(--muted); line-height: 1.65; padding: 12px 16px; background: var(--off-white); border-left: 3px solid var(--black); margin-bottom: 20px; }
+  #tab-cotizador .cost-note code { background: var(--border); padding: 1px 5px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+  #tab-cotizador .cost-section { margin-bottom: 24px; }
+  #tab-cotizador .cost-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  #tab-cotizador .cost-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #tab-cotizador .cost-table th { background: var(--black); color: var(--white); padding: 7px 10px; text-align: right; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; }
+  #tab-cotizador .cost-table th:first-child { text-align: left; min-width: 180px; }
+  #tab-cotizador .cost-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  #tab-cotizador .cost-table td:first-child { font-weight: 500; }
+  #tab-cotizador .cost-table td:not(:first-child) { text-align: right; }
+  #tab-cotizador .cost-table tr:nth-child(even) { background: var(--off-white); }
+  #tab-cotizador .cost-table input[type=number] { width: 88px; padding: 4px 7px; border: 1px solid var(--border); font-size: 11px; text-align: right; font-family: 'IBM Plex Mono', monospace; outline: none; border-radius: 0; }
+  #tab-cotizador .cost-table input:focus { border-color: var(--black); }
+  #tab-cotizador .cost-table input:disabled { background: #f0f0f0; opacity: .35; cursor: not-allowed; }
+  #tab-cotizador .log-formula { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); padding: 6px 10px; background: var(--off-white); margin-top: 6px; }
+  #tab-cotizador .success-msg { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--black); display: none; margin-top: 12px; padding: 10px 14px; background: var(--off-white); border-left: 3px solid var(--black); }
 
   @media(max-width:700px) {
     /* Layout base */
-    .container { padding: 16px 12px; }
-    .header { padding: 14px 16px; }
-    .logo-svg { height: 22px; }
-    .header-right { font-size: 9px; gap: 12px;row-gap: 12px;column-gap: 12px; }
+    #tab-cotizador .container { padding: 16px 12px; }
+    #tab-cotizador .header { padding: 14px 16px; }
+    #tab-cotizador .logo-svg { height: 22px; }
+    #tab-cotizador .header-right { font-size: 9px; gap: 12px;row-gap: 12px;column-gap: 12px; }
 
     /* Nav */
-    .nav { flex-wrap: wrap; }
-    .nbtn { font-size: 9px; padding: 10px 10px; flex: 1 1 45%; }
+    #tab-cotizador .nav { flex-wrap: wrap; }
+    #tab-cotizador .nbtn { font-size: 9px; padding: 10px 10px; flex: 1 1 45%; }
 
     /* Cards */
-    .card { padding: 18px 16px; }
+    #tab-cotizador .card { padding: 18px 16px; }
 
     /* Modelo grid: 3 columnas en mobile */
-    .mgrid { -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px; } .mgrid > .mcard { -webkit-flex: 1 1 80px; flex: 1 1 80px; max-width: 33%; } .model-group-label { font-size: 8px; padding: 4px 7px; }
-    .mcard { padding: 12px 8px; }
-    .mname { font-size: 1.1rem; }
-    .msup  { font-size: 10px; }
-    .mprice { font-size: 10px; }
+    #tab-cotizador .mgrid { -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px; } #tab-cotizador .mgrid > .mcard { -webkit-flex: 1 1 80px; flex: 1 1 80px; max-width: 33%; } #tab-cotizador .model-group-label { font-size: 8px; padding: 4px 7px; }
+    #tab-cotizador .mcard { padding: 12px 8px; }
+    #tab-cotizador .mname { font-size: 1.1rem; }
+    #tab-cotizador .msup  { font-size: 10px; }
+    #tab-cotizador .mprice { font-size: 10px; }
 
     /* Opcionales: sin wrap forzado, todo en una fila */
-    .orow { flex-wrap: nowrap; gap: 6px;row-gap: 6px;column-gap: 6px; padding: 9px 10px; }
-    .oleft { flex: 1 1 auto; min-width: 0; overflow: hidden; }
-    .oname { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .oprice { font-size: 11px; min-width: 72px; flex-shrink: 0; }
-    .toggle-btn button { padding: 5px 9px; font-size: 12px; }
+    #tab-cotizador .orow { flex-wrap: nowrap; gap: 6px;row-gap: 6px;column-gap: 6px; padding: 9px 10px; }
+    #tab-cotizador .oleft { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    #tab-cotizador .oname { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #tab-cotizador .oprice { font-size: 11px; min-width: 72px; flex-shrink: 0; }
+    #tab-cotizador .toggle-btn button { padding: 5px 9px; font-size: 12px; }
 
     /* Logística */
-    .lrow { padding: 10px 12px; }
-    .lleft { flex-wrap: wrap; gap: 8px;row-gap: 8px;column-gap: 8px; }
-    .kmwrap input { width: 80px; }
+    #tab-cotizador .lrow { padding: 10px 12px; }
+    #tab-cotizador .lleft { flex-wrap: wrap; gap: 8px;row-gap: 8px;column-gap: 8px; }
+    #tab-cotizador .kmwrap input { width: 80px; }
 
     /* Tabla resumen */
-    .stbl th, .stbl td { padding: 7px 8px; font-size: 11px; }
-    .stbl th:nth-child(3), .stbl td:nth-child(3) { display: none; } /* ocultar subtotal en mobile si cant=1 */
-    .stbl th:nth-child(4), .stbl td:nth-child(4) { display: none; } /* ocultar USD/m² en mobile */
-    .inc-bar { width: 32px; }
+    #tab-cotizador .stbl th, #tab-cotizador .stbl td { padding: 7px 8px; font-size: 11px; }
+    #tab-cotizador .stbl th:nth-child(3), #tab-cotizador .stbl td:nth-child(3) { display: none; } /* ocultar subtotal en mobile si cant=1 */
+    #tab-cotizador .stbl th:nth-child(4), #tab-cotizador .stbl td:nth-child(4) { display: none; } /* ocultar USD/m² en mobile */
+    #tab-cotizador .inc-bar { width: 32px; }
 
     /* Total box */
-    .tbox { flex-direction: column; gap: 10px;row-gap: 10px;column-gap: 10px; padding: 16px 18px; }
-    .tbox .amt { font-size: 1.6rem; }
+    #tab-cotizador .tbox { flex-direction: column; gap: 10px;row-gap: 10px;column-gap: 10px; padding: 16px 18px; }
+    #tab-cotizador .tbox .amt { font-size: 1.6rem; }
 
     /* Formularios */
-    .frow, .frow3 { grid-template-columns: 1fr; }
+    #tab-cotizador .frow, #tab-cotizador .frow3 { grid-template-columns: 1fr; }
 
     /* Preview */
-    .ometa, .igrid { grid-template-columns: 1fr; }
-    .pvcnt { padding: 20px 16px; }
-    .pvhdr { padding: 14px 16px; flex-wrap: wrap; gap: 8px;row-gap: 8px;column-gap: 8px; }
+    #tab-cotizador .ometa, #tab-cotizador .igrid { grid-template-columns: 1fr; }
+    #tab-cotizador .pvcnt { padding: 20px 16px; }
+    #tab-cotizador .pvhdr { padding: 14px 16px; flex-wrap: wrap; gap: 8px;row-gap: 8px;column-gap: 8px; }
 
     /* Botones nav */
-    .nrow { flex-direction: column; gap: 10px;row-gap: 10px;column-gap: 10px; }
-    .nrow button { width: 100%; justify-content: center; }
-    input, select, textarea { font-size: 16px !important; }
-    .btn { font-size: 10px; padding: 12px 18px; }
+    #tab-cotizador .nrow { flex-direction: column; gap: 10px;row-gap: 10px;column-gap: 10px; }
+    #tab-cotizador .nrow button { width: 100%; justify-content: center; }
+    #tab-cotizador input, #tab-cotizador select, #tab-cotizador textarea { font-size: 16px !important; }
+    #tab-cotizador .btn { font-size: 10px; padding: 12px 18px; }
   }
 
   @media(max-width:700px) {
 
     /* iOS input zoom fix — font-size mínimo 16px */
-    input, select, textarea { font-size: 16px !important; }
+    #tab-cotizador input, #tab-cotizador select, #tab-cotizador textarea { font-size: 16px !important; }
 
   }
   @media(max-width:380px) {
-    .mgrid > .mcard { -webkit-flex: 1 1 120px; flex: 1 1 120px; max-width: 50%; }
-    .nbtn { flex: 1 1 100%; border-right: none; border-bottom: 1px solid #1E1E1E; }
+    #tab-cotizador .mgrid > .mcard { -webkit-flex: 1 1 120px; flex: 1 1 120px; max-width: 50%; }
+    #tab-cotizador .nbtn { flex: 1 1 100%; border-right: none; border-bottom: 1px solid #1E1E1E; }
   }
 
   /* ── MODEL GROUPS ── */
-  .model-group { margin-bottom: 4px; }
-  .model-group-label {
+  #tab-cotizador .model-group { margin-bottom: 4px; }
+  #tab-cotizador .model-group-label {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     letter-spacing: 3px;
@@ -473,17 +747,17 @@
     display: inline-block;
     font-weight: 500;
   }
-  .madera-label  { background: var(--black); color: var(--white); }
-  .modular-label { background: var(--off-white); color: var(--black); border: 1px solid var(--border); }
+  #tab-cotizador .madera-label  { background: var(--black); color: var(--white); }
+  #tab-cotizador .modular-label { background: var(--off-white); color: var(--black); border: 1px solid var(--border); }
 
-  .mcard-madera.selected { border-color: var(--black); background: var(--black); color: var(--white); }
-  .mcard-modular { background: var(--off-white); }
-  .mcard-modular.selected { border-color: var(--black); background: var(--black); color: var(--white); }
-  .mcard-modular .msup { color: var(--muted); }
-  .mcard-modular.selected .msup { color: #aaa; }
-  .mcard-modular.selected .mprice { color: var(--white); }
+  #tab-cotizador .mcard-madera.selected { border-color: var(--black); background: var(--black); color: var(--white); }
+  #tab-cotizador .mcard-modular { background: var(--off-white); }
+  #tab-cotizador .mcard-modular.selected { border-color: var(--black); background: var(--black); color: var(--white); }
+  #tab-cotizador .mcard-modular .msup { color: var(--muted); }
+  #tab-cotizador .mcard-modular.selected .msup { color: #aaa; }
+  #tab-cotizador .mcard-modular.selected .mprice { color: var(--white); }
   /* ── MODAL CONTRASEÑA ── */
-  .pass-overlay {
+  #tab-cotizador .pass-overlay {
     display: none;
     position: fixed;
     top:0;right:0;bottom:0;left:0;
@@ -492,14 +766,14 @@
     align-items: center;
     justify-content: center;
   }
-  .pass-overlay.show { display:-webkit-box;display:-webkit-flex;display:flex; }
-  .pass-box {
+  #tab-cotizador .pass-overlay.show { display:-webkit-box;display:-webkit-flex;display:flex; }
+  #tab-cotizador .pass-box {
     background: var(--white);
     padding: 36px 40px;
     width: 320px;
     border: 1px solid var(--border);
   }
-  .pass-title {
+  #tab-cotizador .pass-title {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 3px;
@@ -507,7 +781,7 @@
     color: var(--muted);
     margin-bottom: 20px;
   }
-  .pass-input {
+  #tab-cotizador .pass-input {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border);
@@ -519,9 +793,9 @@
     border-radius: 0;
     margin-bottom: 12px;
   }
-  .pass-input:focus { border-color: var(--black); }
-  .pass-input.error { border-color: var(--red); }
-  .pass-error {
+  #tab-cotizador .pass-input:focus { border-color: var(--black); }
+  #tab-cotizador .pass-input.error { border-color: var(--red); }
+  #tab-cotizador .pass-error {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     color: var(--red);
@@ -529,11 +803,240 @@
     margin-bottom: 12px;
     display: none;
   }
-  .pass-error.show { display: block; }
-  .pass-actions { display:-webkit-box;display:-webkit-flex;display:flex; gap: 8px;row-gap: 8px;column-gap: 8px; }
+  #tab-cotizador .pass-error.show { display: block; }
+  #tab-cotizador .pass-actions { display:-webkit-box;display:-webkit-flex;display:flex; gap: 8px;row-gap: 8px;column-gap: 8px; }
 </style>
 </head>
 <body>
+
+<!-- ══ GATE DE ACCESO (login @4housing.com.ar) ════════════════════════════════ -->
+<style>
+  #authGate{position:fixed;inset:0;z-index:99999;background:#0A0A0A;color:#F5F4F0;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    font-family:'IBM Plex Sans',sans-serif;text-align:center;padding:24px}
+  #authGate .lg-box{max-width:380px}
+  #authGate .lg-logo{font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:3px;font-size:13px;color:#C8C5BC;margin-bottom:28px}
+  #authGate .lg-title{font-size:20px;font-weight:600;margin-bottom:10px}
+  #authGate .lg-sub{font-size:13px;color:#9A9690;line-height:1.6;margin-bottom:26px}
+  #authGate .lg-btn{background:#F5F4F0;color:#0A0A0A;border:none;padding:12px 26px;
+    font-size:14px;font-weight:600;border-radius:2px;cursor:pointer;font-family:inherit}
+  #authGate .lg-btn:hover{opacity:.85}
+  #authGate .lg-btn:disabled{opacity:.4;cursor:default}
+  #authGate .lg-spinner{width:26px;height:26px;border:3px solid #333;border-top-color:#F5F4F0;
+    border-radius:50%;animation:lgspin .7s linear infinite;margin:0 auto}
+  @keyframes lgspin{to{transform:rotate(360deg)}}
+  #authGate .lg-err{color:#E8896B;font-size:13px;margin-top:18px;line-height:1.5;display:none}
+  #authGate .lg-err.show{display:block}
+</style>
+<div id="authGate">
+  <div class="lg-box">
+    <div class="lg-logo">LABO · COMERCIAL</div>
+    <div id="lg-state-login">
+      <div class="lg-title">Acceso restringido</div>
+      <div class="lg-sub">Esta herramienta es exclusiva para el equipo de 4housing.<br>Ingresá con tu cuenta de Microsoft <strong>@4housing.com.ar</strong>.</div>
+      <button class="lg-btn" id="lg-login-btn" onclick="gateLogin()">Ingresar con Microsoft</button>
+      <div class="lg-err" id="lg-err"></div>
+    </div>
+    <div id="lg-state-loading" style="display:none">
+      <div class="lg-spinner"></div>
+      <div class="lg-sub" style="margin-top:18px">Verificando acceso…</div>
+    </div>
+  </div>
+</div>
+
+<div class="hdr">
+  <svg viewBox="4 0 139 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:18px">
+    <rect x="4" y="0" width="5" height="28" fill="#F5F4F0"/><rect x="4" y="23" width="22" height="5" fill="#F5F4F0"/>
+    <rect x="38" y="0" width="5" height="28" fill="#F5F4F0"/><rect x="59" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="38" y="0" width="26" height="5" fill="#F5F4F0"/><rect x="38" y="12" width="26" height="5" fill="#F5F4F0"/>
+    <rect x="76" y="0" width="5" height="28" fill="#F5F4F0"/><rect x="76" y="0" width="25" height="5" fill="#F5F4F0"/>
+    <rect x="76" y="12" width="22" height="5" fill="#F5F4F0"/><rect x="76" y="23" width="25" height="5" fill="#F5F4F0"/>
+    <rect x="96" y="0" width="5" height="17" fill="#F5F4F0"/><rect x="96" y="11" width="5" height="17" fill="#F5F4F0"/>
+    <rect x="113" y="0" width="5" height="28" fill="#F5F4F0"/><rect x="134" y="0" width="5" height="28" fill="#F5F4F0"/>
+    <rect x="113" y="0" width="26" height="5" fill="#F5F4F0"/><rect x="113" y="23" width="26" height="5" fill="#F5F4F0"/>
+  </svg>
+  <div class="hdr-right">
+    <span class="hdr-label">CRM — Gerencia Comercial</span>
+    <div class="hdr-actions">
+      <button class="btn-sm" onclick="exportCSV()">↓ Exportar</button>
+      <button class="btn-sm" onclick="loadData()">↺ Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('pipeline',this)">Pipeline</div>
+  <div class="tab" onclick="switchTab('analisis',this)">Análisis</div>
+  <div class="tab" onclick="switchTab('seguimiento',this)">Seguimiento</div>
+  <div class="tab" onclick="switchTab('cotizador',this)">+ Cotizador</div>
+</div>
+
+<!-- ══ TAB 1: PIPELINE ══════════════════════════════════════════════════════ -->
+<div id="tab-pipeline" class="tab-content active">
+<div class="page">
+  <div class="sidebar">
+    <div class="s-section">
+      <div class="s-label">Vista</div>
+      <div class="s-item active" onclick="setFilter('all',this)">Todos <span class="s-count" id="cnt-all">0</span></div>
+    </div>
+    <div class="s-divider"></div>
+    <div class="s-section">
+      <div class="s-label">Status</div>
+      <div class="s-item" onclick="setFilter('etapa:Cotizado',this)">Cotizado <span class="s-count" id="cnt-cotizado">0</span></div>
+      <div class="s-item" onclick="setFilter('etapa:En negociación',this)">En negociación <span class="s-count" id="cnt-negociacion">0</span></div>
+      <div class="s-item" onclick="setFilter('etapa:Cerrado ganado',this)">Cerrado ganado <span class="s-count" id="cnt-ganado">0</span></div>
+      <div class="s-item" onclick="setFilter('etapa:Cerrado perdido',this)">Cerrado perdido <span class="s-count" id="cnt-perdido">0</span></div>
+    </div>
+    <div class="s-divider"></div>
+    <div class="s-section">
+      <div class="s-label">Línea</div>
+      <div class="s-item" onclick="setFilter('linea:LABO Madera',this)">LABO Madera <span class="s-count" id="cnt-madera">0</span></div>
+      <div class="s-item" onclick="setFilter('linea:LABO Modular',this)">LABO Modular <span class="s-count" id="cnt-modular">0</span></div>
+    </div>
+    <div class="s-divider"></div>
+    <div class="s-section">
+      <div class="s-label">Temperatura</div>
+      <div class="s-item" onclick="setFilter('temp:caliente',this)">🔥 Caliente <span class="s-count" id="cnt-caliente">0</span></div>
+      <div class="s-item" onclick="setFilter('temp:tibio',this)">🌤 Tibio <span class="s-count" id="cnt-tibio">0</span></div>
+      <div class="s-item" onclick="setFilter('temp:frio',this)">❄️ Frío <span class="s-count" id="cnt-frio">0</span></div>
+    </div>
+  </div>
+  <div class="content">
+    <!-- KPIs fila 1 -->
+    <div class="kpi-grid">
+      <div class="kpi dark clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline total</div><div class="kpi-value" id="kpi-pipeline">USD 0</div><div class="kpi-explain">Suma de todas las cotizaciones activas</div>
+        <div class="kpi-sub" id="kpi-pipeline-sub">—</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Última cotización</div><div class="kpi-value" id="kpi-ultima">USD 0</div><div class="kpi-explain">Suma de últimas cot. por cliente activo</div>
+        <div class="kpi-sub" id="kpi-ultima-sub">—</div></div>
+      <div class="kpi green clickable" onclick="setKpiFilter('ganado')" title="Click para filtrar tabla"><div class="kpi-label">Cerrado ganado</div><div class="kpi-value" id="kpi-ganado">USD 0</div><div class="kpi-explain">Total cerrado ganado</div>
+        <div class="kpi-sub" id="kpi-ganado-sub">—</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('cerrados')" title="Click para filtrar tabla"><div class="kpi-label">Tasa de conversión</div><div class="kpi-value" id="kpi-conv">0%</div><div class="kpi-explain">Ganados ÷ total cerrado</div>
+        <div class="kpi-sub" id="kpi-conv-sub">ganado / cerrado</div></div>
+    </div>
+    <!-- KPIs fila 2 -->
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Pipeline ponderado</div><div class="kpi-value" id="kpi-ponderado">USD 0</div><div class="kpi-explain">Cotizado ×20% + Negociación ×60%</div><div class="kpi-sub">prob. esperada</div></div>
+      <div class="kpi amber clickable" onclick="setKpiFilter('frios')" title="Click para filtrar tabla"><div class="kpi-label">Leads sin acción</div><div class="kpi-value" id="kpi-frios">0</div><div class="kpi-explain">+14 días sin actividad</div><div class="kpi-sub">+14 días sin actividad</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('activos')" title="Click para filtrar tabla"><div class="kpi-label">Forecast mes</div><div class="kpi-value" id="kpi-forecast">USD 0</div><div class="kpi-explain">Ganado este mes + 30% ponderado</div>
+        <div class="kpi-sub" id="kpi-forecast-sub">—</div></div>
+      <div class="kpi clickable" onclick="setKpiFilter('nuevas')" title="Click para filtrar tabla"><div class="kpi-label">Nuevas este mes</div><div class="kpi-value" id="kpi-nuevas">0</div><div class="kpi-explain">Cotizaciones creadas este mes</div><div class="kpi-sub">leads</div></div>
+    </div>
+    <!-- Pipeline bar -->
+    <div class="pipeline-bar" id="pipeline-bar"></div>
+    <div class="pipeline-legend" id="pipeline-legend" style="margin-bottom:20px"></div>
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-hdr">
+        <span class="table-title" id="table-title">Todos los leads</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="search-wrap"><input type="text" placeholder="Buscar..." oninput="filterSearch(this.value)"></div>
+        </div>
+      </div>
+      <div id="table-container"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Cargando...</div></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ TAB 2: ANÁLISIS ══════════════════════════════════════════════════════ -->
+<div id="tab-analisis" class="tab-content">
+<div style="padding:24px">
+  <!-- Funnel -->
+  <div class="sec-title">Embudo de conversión</div>
+  <div class="funnel" id="funnel"></div>
+
+  <!-- Forecast ponderado -->
+  <div class="sec-title">Forecast ponderado</div>
+  <div class="forecast-row" id="forecast-row"></div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-box">
+      <div class="sec-title">Valor por modelo</div>
+      <div class="bar-chart" id="chart-modelo"></div>
+    </div>
+    <div class="chart-box">
+      <div class="sec-title">Leads por vendedor</div>
+      <div class="bar-chart" id="chart-vendedor"></div>
+    </div>
+    <div class="chart-box">
+      <div class="sec-title">Distribución Madera vs Modular</div>
+      <div class="bar-chart" id="chart-linea"></div>
+    </div>
+    <div class="chart-box">
+      <div class="sec-title">Conversión por vendedor</div>
+      <div class="bar-chart" id="chart-conv-vendedor"></div>
+    </div>
+  </div>
+
+  <!-- Motivos de pérdida -->
+  <div class="sec-title">Motivos de pérdida</div>
+  <div id="motivos-container" style="background:var(--card);border:1px solid var(--border);padding:16px;margin-bottom:20px">
+    <div class="motivos-list" id="motivos-list"></div>
+  </div>
+
+  <!-- Tendencia mensual -->
+  <div class="sec-title">Tendencia mensual (cotizaciones nuevas)</div>
+  <div class="trend-chart">
+    <div class="trend-bars" id="trend-bars"></div>
+  </div>
+</div>
+</div>
+
+<!-- ══ TAB 3: SEGUIMIENTO ═══════════════════════════════════════════════════ -->
+<div id="tab-seguimiento" class="tab-content">
+<div style="padding:24px">
+  <!-- Velocidad entre etapas -->
+  <div class="sec-title">Velocidad de avance entre etapas (días promedio)</div>
+  <div class="velocity-grid" id="velocity-grid" style="margin-bottom:24px"></div>
+
+  <!-- Leads que necesitan acción -->
+  <div class="sec-title">Leads que necesitan acción urgente</div>
+  <div class="table-wrap" style="margin-bottom:24px">
+    <div id="urgentes-container"><div class="empty"><div class="empty-icon">✓</div><div class="empty-text">Sin leads urgentes</div></div></div>
+  </div>
+
+  <!-- Ranking por temperatura -->
+  <div class="sec-title">Ranking por temperatura (leads activos)</div>
+  <div class="table-wrap">
+    <div id="ranking-container"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Sin leads activos</div></div></div>
+  </div>
+</div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-panel">
+    <div class="dp-hdr">
+      <span class="dp-title" id="dp-title">Detalle</span>
+      <button class="dp-close" onclick="closeDetailPanel()">✕</button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+  </div>
+</div>
+
+<!-- MOTIVO PÉRDIDA MODAL -->
+<div class="modal-overlay" id="motivoModal">
+  <div class="modal-box">
+    <div class="modal-title">¿Por qué se perdió esta oportunidad?</div>
+    <div class="modal-options" id="motivo-options">
+      <div class="modal-opt" onclick="selMotivo(this,'Precio')">Precio muy alto</div>
+      <div class="modal-opt" onclick="selMotivo(this,'Competencia')">Eligió a la competencia</div>
+      <div class="modal-opt" onclick="selMotivo(this,'Timing')">No era el momento</div>
+      <div class="modal-opt" onclick="selMotivo(this,'Financiamiento')">No consiguió financiamiento</div>
+      <div class="modal-opt" onclick="selMotivo(this,'Sin respuesta')">Sin respuesta / desapareció</div>
+      <div class="modal-opt" onclick="selMotivo(this,'Otro')">Otro</div>
+    </div>
+    <input class="modal-other" id="motivo-otro" placeholder="Describí el motivo..." style="display:none">
+    <div class="modal-actions">
+      <button class="btn-modal" onclick="cancelMotivo()">Cancelar</button>
+      <button class="btn-modal primary" onclick="confirmarMotivo()">Confirmar pérdida</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 4: COTIZADOR ═══════════════════════════════════════════════════════ -->
+<div id="tab-cotizador" class="tab-content">
 
 <!-- Modal contraseña -->
 <div class="pass-overlay" id="passOverlay" onclick="closePass(event)">
@@ -746,12 +1249,832 @@
   </div>
 
 </div>
+</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="./msal-browser.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script>
+/* ════════════════ CRM (pipeline / análisis / seguimiento) ════════════════ */
+// ── Supabase (datos) + Microsoft Azure AD (login) ────────────────────────────
+const SUPABASE_URL='https://rhajlvmneyvgqlyeyjsd.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYWpsdm1uZXl2Z3FseWV5anNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODc3MDYsImV4cCI6MjA5Njc2MzcwNn0.iXkFP1T4DEhPtzGn7xtIfM7msh9Ft35DZUvVtCErXOk';
+
+// Convert Supabase row (snake_case) → app lead (camelCase)
+function _rowToLead(r){
+  return {
+    id:r.id, leadNum:r.lead_num, fecha:r.fecha, cliente:r.cliente, contacto:r.contacto,
+    email:r.email, tel:r.tel, terreno:r.terreno, vendedor:r.vendedor, lugar:r.lugar,
+    etapa:r.etapa, motivoPerdida:r.motivo_perdida, cotizaciones:r.cotizaciones||[],
+    actividad:r.actividad||[], totalPipeline:r.total_pipeline,
+    ultimaCot:r.ultima_cot, fechaUltimaCot:r.fecha_ultima_cot
+  };
+}
+// Convert app lead (camelCase) → Supabase row (snake_case)
+function _leadToRow(l){
+  return {
+    id:l.id, lead_num:l.leadNum, fecha:l.fecha, cliente:l.cliente, contacto:l.contacto,
+    email:l.email, tel:l.tel, terreno:l.terreno, vendedor:l.vendedor, lugar:l.lugar,
+    etapa:l.etapa, motivo_perdida:l.motivoPerdida||'', cotizaciones:l.cotizaciones||[],
+    actividad:l.actividad||[], total_pipeline:l.totalPipeline||0,
+    ultima_cot:l.ultimaCot||null, fecha_ultima_cot:l.fechaUltimaCot||null,
+    updated_at:new Date().toISOString()
+  };
+}
+async function _sbFetch(path,opts){
+  return fetch(SUPABASE_URL+'/rest/v1/'+path,{
+    ...opts,
+    headers:{
+      'apikey':SUPABASE_KEY,
+      'Authorization':'Bearer '+SUPABASE_KEY,
+      'Content-Type':'application/json',
+      ...(opts&&opts.headers)
+    }
+  });
+}
+// Read all leads from Supabase
+async function readLeads(){
+  try{
+    const r=await _sbFetch('labo_leads?select=*&order=fecha_ultima_cot.desc.nullslast',{method:'GET'});
+    if(!r.ok)throw new Error('Supabase read '+r.status);
+    const rows=await r.json();
+    const leads=rows.map(_rowToLead);
+    try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
+    return leads;
+  }catch(e){
+    console.warn('Supabase read failed, using cache:',e);
+    try{const c=localStorage.getItem('labo_crm_leads');return c?JSON.parse(c):[];}catch(e2){return[];}
+  }
+}
+// Save a SINGLE lead (upsert) — avoids overwriting other vendors' changes
+async function saveLeadToDB(lead){
+  try{
+    const row=_leadToRow(lead);
+    const r=await _sbFetch('labo_leads?on_conflict=id',{
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(row)
+    });
+    if(!r.ok){console.warn('Supabase save '+r.status,await r.text());}
+    return r.ok;
+  }catch(e){console.warn('saveLeadToDB error:',e);return false;}
+}
+// Legacy compatibility — writeLeads now upserts each lead individually
+async function writeLeads(leads){
+  for(const l of leads){await saveLeadToDB(l);}
+  try{localStorage.setItem('labo_crm_leads',JSON.stringify(leads));}catch(e){}
+}
+// Save only the currently-modified lead
+function saveAllLeads(){
+  if(currentLeadId){
+    const l=allLeads.find(x=>x.id===currentLeadId);
+    if(l){saveLeadToDB(l).catch(e=>console.warn(e));return;}
+  }
+  // Fallback: save all (rare)
+  writeLeads(allLeads).catch(e=>console.warn(e));
+}
+// Save a specific lead by id
+function saveLeadById(id){
+  const l=allLeads.find(x=>x.id===id);
+  if(l)saveLeadToDB(l).catch(e=>console.warn(e));
+}
+
+
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const ETAPAS=[
+  {key:'Cotizado',       cls:'e-cotizado',   color:'#1A5276', prob:0.20},
+  {key:'En negociación', cls:'e-negociacion',color:'#7D3C98', prob:0.60},
+  {key:'Cerrado ganado', cls:'e-ganado',     color:'#1E8449', prob:1.00},
+  {key:'Cerrado perdido',cls:'e-perdido',    color:'#C0392B', prob:0.00},
+];
+const ETAPA_CLS=Object.fromEntries(ETAPAS.map(e=>[e.key,e.cls]));
+const ETAPA_PROB=Object.fromEntries(ETAPAS.map(e=>[e.key,e.prob]));
+const ACTIVAS=['Cotizado','En negociación'];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allLeads=[], activeFilter='all', sortCol='fecha', sortAsc=false, searchVal='';
+let currentLeadId=null, pendingEtapaChange=null, selectedMotivo=null;
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadData(){
+  try{
+    const leads=await readLeads();
+    // Migrate old format leads (without cotizaciones[]) to new format
+    allLeads=leads.map(function(l){
+      if(!l.cotizaciones){
+        // Old format — wrap single cotization
+        const cot={
+          id:'cot_'+l.id,
+          fecha:l.fecha,
+          num:l.num||'—',
+          linea:l.linea,
+          modelo:l.modelo,
+          sup:l.sup,
+          cant:l.cant||1,
+          total:l.total||0,
+          pago:l.pago,
+          plazo:l.plazo,
+          notas:l.notas
+        };
+        l.cotizaciones=[cot];
+        l.totalPipeline=l.total||0;
+        l.ultimaCot=cot;
+        l.fechaUltimaCot=l.fecha;
+      }
+      // Ensure leadNum exists
+      if(!l.leadNum) l.leadNum=null;
+      return l;
+    }).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  }catch(e){console.error('loadData error:',e);allLeads=[];}
+  render();
+}
+
+// ── Temperature score ─────────────────────────────────────────────────────────
+function _terrenoScore(l){
+  if(l.terreno==='Sí, posee terreno')return 25;
+  if(l.terreno==='En búsqueda de terreno')return 10;
+  if(l.terreno==='No posee terreno')return-10;
+  return 0; // sin especificar: neutro
+}
+function getTemp(l){
+  if(!ACTIVAS.includes(l.etapa))return null;
+  let score=0;
+  // Etapa weight
+  if(l.etapa==='En negociación')score+=40;
+  else if(l.etapa==='Propuesta enviada')score+=20;
+  else score+=5;
+  // Valor weight
+  const tv=l.totalPipeline||l.total||0;
+  if(tv>150000)score+=30;
+  else if(tv>80000)score+=20;
+  else if(tv>40000)score+=10;
+  // Actividad reciente
+  const dias=diasDesde(l);
+  if(dias<=3)score+=30;
+  else if(dias<=7)score+=20;
+  else if(dias<=14)score+=10;
+  else score-=20;
+  // Terreno
+  score+=_terrenoScore(l);
+  if(score>=60)return'caliente';
+  if(score>=30)return'tibio';
+  return'frio';
+}
+function getTempScore(l){
+  let s=0;
+  if(l.etapa==='En negociación')s+=40;
+  else if(l.etapa==='Propuesta enviada')s+=20;
+  else s+=5;
+  const tv2=l.totalPipeline||l.total||0;
+  if(tv2>150000)s+=30;else if(tv2>80000)s+=20;else if(tv2>40000)s+=10;
+  const d=diasDesde(l);
+  if(d<=3)s+=30;else if(d<=7)s+=20;else if(d<=14)s+=10;else s-=20;
+  s+=_terrenoScore(l);
+  return s;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderFast(){
+  // Only update what's visible in Pipeline tab — instant
+  updateCounts();updateKPIs();updatePipelineBar();renderTable();
+}
+function render(){
+  // Full render — all tabs
+  updateCounts();updateKPIs();updatePipelineBar();renderTable();
+  // Defer heavy tabs to next tick so UI responds immediately
+  setTimeout(function(){
+    renderFunnel();renderCharts();renderVelocity();renderUrgentes();renderRanking();renderTrend();renderForecast();renderMotivos();
+  },0);
+}
+
+function getFiltered(){
+  let leads=[...allLeads];
+  if(activeFilter!=='all'){
+    if(activeFilter.startsWith('_kpi:')){
+      const ktype=activeFilter.split(':')[1];
+      const now=new Date();
+      if(ktype==='activos') leads=leads.filter(l=>ACTIVAS.includes(l.etapa));
+      else if(ktype==='ganado') leads=leads.filter(l=>l.etapa==='Cerrado ganado');
+      else if(ktype==='cerrados') leads=leads.filter(l=>l.etapa==='Cerrado ganado'||l.etapa==='Cerrado perdido');
+      else if(ktype==='frios') leads=leads.filter(l=>ACTIVAS.includes(l.etapa)&&diasDesde(l)>14);
+      else if(ktype==='nuevas') leads=leads.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+    } else {
+      const[field,val]=activeFilter.split(':');
+      if(field==='temp') leads=leads.filter(l=>getTemp(l)===val);
+      else if(field==='linea') leads=leads.filter(l=>(l.cotizaciones||[{linea:l.linea}]).some(c=>c.linea===val));
+      else leads=leads.filter(l=>l[field]===val);
+    }
+  }
+  if(searchVal){
+    const q=searchVal.toLowerCase();
+    leads=leads.filter(l=>(l.cliente||'').toLowerCase().includes(q)||(l.vendedor||'').toLowerCase().includes(q)||(l.modelo||'').toLowerCase().includes(q)||(l.num||'').toLowerCase().includes(q));
+  }
+  return leads.sort((a,b)=>{
+    let va=a[sortCol]||'',vb=b[sortCol]||'';
+    if(sortCol==='total'||sortCol==='totalPipeline'||sortCol==='cant'){
+      va=+(a.totalPipeline||a.total||0);
+      vb=+(b.totalPipeline||b.total||0);
+    }
+    if(va<vb)return sortAsc?-1:1;if(va>vb)return sortAsc?1:-1;return 0;
+  });
+}
+
+function updateCounts(){
+  const ct=(key)=>allLeads.filter(l=>l[key[0]]===key[1]).length;
+  document.getElementById('cnt-all').textContent=allLeads.length;
+  ETAPAS.forEach(e=>{ const el=document.getElementById('cnt-'+e.key.split(' ')[0].toLowerCase()); if(el)el.textContent=allLeads.filter(l=>l.etapa===e.key).length; });
+  document.getElementById('cnt-cotizado').textContent=allLeads.filter(l=>l.etapa==='Cotizado').length;
+  document.getElementById('cnt-negociacion').textContent=allLeads.filter(l=>l.etapa==='En negociación').length;
+  document.getElementById('cnt-ganado').textContent=allLeads.filter(l=>l.etapa==='Cerrado ganado').length;
+  document.getElementById('cnt-perdido').textContent=allLeads.filter(l=>l.etapa==='Cerrado perdido').length;
+  document.getElementById('cnt-madera').textContent=allLeads.filter(l=>(l.cotizaciones||[{linea:l.linea}]).some(c=>c.linea==='LABO Madera')).length;
+  document.getElementById('cnt-modular').textContent=allLeads.filter(l=>(l.cotizaciones||[{linea:l.linea}]).some(c=>c.linea==='LABO Modular')).length;
+  document.getElementById('cnt-caliente').textContent=allLeads.filter(l=>getTemp(l)==='caliente').length;
+  document.getElementById('cnt-tibio').textContent=allLeads.filter(l=>getTemp(l)==='tibio').length;
+  document.getElementById('cnt-frio').textContent=allLeads.filter(l=>getTemp(l)==='frio').length;
+}
+
+function updateKPIs(){
+  const base = activeFilter==='all'||activeFilter.startsWith('_kpi:') ? allLeads : getFiltered();
+  const activas=[],ganadas=[],perdidas=[];
+  base.forEach(l=>{
+    if(ACTIVAS.includes(l.etapa))activas.push(l);
+    else if(l.etapa==='Cerrado ganado')ganadas.push(l);
+    else if(l.etapa==='Cerrado perdido')perdidas.push(l);
+  });
+  // Pipeline total = sum of all cotizaciones for active leads
+  const pTot=activas.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
+  // Última cotización = sum of LAST cotización per active lead (not totalPipeline)
+  const ultimaTot=activas.reduce((s,l)=>{
+    const uc=l.ultimaCot?l.ultimaCot.total:((l.cotizaciones&&l.cotizaciones.length>0)?l.cotizaciones[l.cotizaciones.length-1].total:(l.total||0));
+    return s+uc;
+  },0);
+  const gTot=ganadas.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
+  const cerradas=ganadas.length+perdidas.length;
+  const conv=cerradas>0?Math.round(ganadas.length/cerradas*100):0;
+  const ponderado=activas.reduce((s,l)=>s+(l.totalPipeline||l.total||0)*(ETAPA_PROB[l.etapa]||0),0);
+  const frios=activas.filter(l=>diasDesde(l)>14).length;
+  const now=new Date();
+  const nuevas=base.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+  const ganadoMes=ganadas.filter(l=>{const d=new Date(l.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
+  const filterLabel=activeFilter==='all'?'':' (filtrado)';
+  document.getElementById('kpi-pipeline').textContent='USD '+fmt(pTot);
+  document.getElementById('kpi-pipeline-sub').textContent=activas.length+' leads activos'+filterLabel;
+  document.getElementById('kpi-ultima').textContent='USD '+fmt(ultimaTot);
+  document.getElementById('kpi-ultima-sub').textContent=activas.length+' leads activos'+filterLabel;
+  document.getElementById('kpi-ganado').textContent='USD '+fmt(gTot);
+  document.getElementById('kpi-ganado-sub').textContent=ganadas.length+' operaciones'+filterLabel;
+  document.getElementById('kpi-conv').textContent=conv+'%';
+  document.getElementById('kpi-conv-sub').textContent='de '+cerradas+' cerradas'+filterLabel;
+  document.getElementById('kpi-ponderado').textContent='USD '+fmt(ponderado);
+  document.getElementById('kpi-frios').textContent=frios;
+  document.getElementById('kpi-forecast').textContent='USD '+fmt(ganadoMes+ponderado*0.3);
+  document.getElementById('kpi-forecast-sub').textContent='ganado + 30% ponderado'+filterLabel;
+  document.getElementById('kpi-nuevas').textContent=nuevas;
+}
+
+function updatePipelineBar(){
+  const total=allLeads.length||1;
+  const bar=document.getElementById('pipeline-bar');
+  const leg=document.getElementById('pipeline-legend');
+  bar.innerHTML=ETAPAS.map(e=>{
+    const n=allLeads.filter(l=>l.etapa===e.key).length;
+    return '<div class="pb-seg" style="flex:'+Math.max(n/total*100,0.3)+';background:'+e.color+'" title="'+e.key+': '+n+'"></div>';
+  }).join('');
+  leg.innerHTML=ETAPAS.map(e=>{
+    const n=allLeads.filter(l=>l.etapa===e.key).length;
+    return '<div class="pl-item"><div class="pl-dot" style="background:'+e.color+'"></div>'+e.key+' ('+n+')</div>';
+  }).join('');
+}
+
+function renderTable(){
+  var leads=getFiltered();
+  var c=document.getElementById('table-container');
+  if(!leads.length){c.innerHTML='<div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Sin resultados</div></div>';return;}
+  var rows=leads.map(function(l){
+    var cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+    var edot=ETAPAS.find(function(e){return e.key===l.etapa;})||ETAPAS[0];
+    var dInicio=l.fecha?new Date(l.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    var dias=diasDesde(l);
+    var alrt=dias>14&&ACTIVAS.includes(l.etapa);
+    var temp=getTemp(l);
+    var tempHtml=temp?'<span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span>':'—';
+    var cots=l.cotizaciones||[];
+    var nCots=cots.length;
+    var cotsByDate=(cots&&cots.length)?[].concat(cots).sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);}):[];
+    var uc=l.ultimaCot||cotsByDate[0]||{};
+    var lbCls=(uc.linea||l.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
+    var lineaLabel=uc.linea||l.linea||'—';
+    var modeloLabel=uc.modelo||l.modelo||'—';
+    var lid=l.id;
+    var etapaMenu=ETAPAS.map(function(e){
+      return '<button class="'+ETAPA_CLS[e.key]+'" data-eid="'+e.key+'" data-lid="'+lid+'" onclick="changeEtapa(this.dataset.lid,this.dataset.eid)"><span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';
+    }).join('');
+    var mainRow=
+      '<tr class="lead-main-row" data-lid="'+lid+'" onclick="toggleCots(this.dataset.lid)" style="cursor:pointer">'+
+        '<td style="text-align:center"><span style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--mid)">'+(l.leadNum||'—')+'</span></td>'+
+        '<td style="font-family:IBM Plex Mono,monospace;font-size:11px">'+dInicio+'</td>'+
+        '<td><div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted" style="font-size:10px">'+esc(l.contacto||'')+'</div></td>'+
+        '<td><span class="lb '+lbCls+'">'+esc(lineaLabel)+'</span><div class="td-muted" style="font-size:10px">Mod. '+esc(modeloLabel)+(nCots>1?' <span class="cot-badge">'+nCots+'</span>':'')+'</div></td>'+
+        '<td style="font-size:11px;color:var(--mid)">'+esc(l.vendedor||'—')+'</td>'+
+        '<td onclick="event.stopPropagation()">'+
+          '<div class="etapa-dropdown" id="dd_'+lid+'">'+
+            '<button class="etapa '+cls+'" data-did="dd_'+lid+'" onclick="toggleDD(this.dataset.did)">'+
+              '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
+            '</button>'+
+            '<div class="etapa-menu">'+etapaMenu+'</div>'+
+          '</div>'+
+        '</td>'+
+        '<td style="text-align:center;font-family:IBM Plex Mono,monospace;font-size:12px'+(alrt?';color:var(--red)':'')+'">'+dias+'d</td>'+
+        '<td>'+tempHtml+'</td>'+
+      '</tr>';
+    var cotRows='';
+    if(nCots>0){
+      var cotsDesc=[].concat(cots).sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
+      var cotItems=cotsDesc.map(function(ct,i){
+        var d=ct.fecha?new Date(ct.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+        var lc=(ct.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
+        return '<div class="cot-expand-item'+(i===0?' cot-latest':'')+'" data-lid="'+lid+'" onclick="openDetail(this.dataset.lid)">'+
+          '<span class="cot-item-oc">OC '+esc(ct.num||'—')+'</span>'+
+          '<span class="cot-item-date">'+d+'</span>'+
+          '<span class="lb '+lc+'" style="font-size:9px;padding:1px 5px">'+esc(ct.linea||'—')+'</span>'+
+          '<span class="td-muted" style="font-size:10px">Mod. '+esc(ct.modelo||'—')+'</span>'+
+          '<span class="cot-item-total">USD '+fmt(ct.total)+'</span>'+
+          (i===0?'<span class="cot-latest-badge">última</span>':'')+
+        '</div>';
+      }).join('');
+      cotRows=
+        '<tr class="cot-expand-row" id="cots_'+lid+'" style="display:none">'+
+          '<td colspan="8" style="padding:0">'+
+            '<div class="cot-expand-inner">'+
+              cotItems+
+              '<div class="cot-expand-footer" data-lid="'+lid+'" onclick="openDetail(this.dataset.lid)">Ver detalle completo y actividad →</div>'+
+            '</div>'+
+          '</td>'+
+        '</tr>';
+    }
+    return mainRow+cotRows;
+  }).join('');
+  c.innerHTML=
+    '<table><thead><tr>'+
+      '<th onclick="setSort(\x27leadNum\x27)" style="width:40px;text-align:center">#</th>'+
+      '<th onclick="setSort(\x27fecha\x27)" style="width:80px">Fecha</th>'+
+      '<th onclick="setSort(\x27cliente\x27)">Cliente</th>'+
+      '<th onclick="setSort(\x27linea\x27)">Línea / Modelo</th>'+
+      '<th onclick="setSort(\x27vendedor\x27)">Vendedor</th>'+
+      '<th style="width:140px">Status</th>'+
+      '<th style="width:70px;text-align:center">Sin act.</th>'+
+      '<th style="width:90px">Temp.</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+
+function toggleCots(id){
+  var row=document.getElementById('cots_'+id);
+  if(!row)return openDetail(id);
+  var isOpen=row.style.display!=='none';
+  document.querySelectorAll('.cot-expand-row').forEach(function(r){r.style.display='none';});
+  if(!isOpen)row.style.display='';
+}
+
+
+// ── Funnel ────────────────────────────────────────────────────────────────────
+function renderFunnel(){
+  const f=document.getElementById('funnel');
+  const activas=ETAPAS.filter(e=>e.key!=='Cerrado ganado'&&e.key!=='Cerrado perdido');
+  const max=allLeads.filter(l=>l.etapa===activas[0].key).length||1;
+  let html='';
+  activas.forEach((e,i)=>{
+    const n=allLeads.filter(l=>l.etapa===e.key).length;
+    const val=allLeads.filter(l=>l.etapa===e.key).reduce((s,l)=>s+(l.totalPipeline||l.total||0),0);
+    const pct=Math.max(n/Math.max(allLeads.length,1)*100,2);
+    const conv=i>0?Math.round(n/Math.max(allLeads.filter(l=>l.etapa===activas[i-1].key).length,1)*100)+'%':'—';
+    const totalLeads=Math.max(allLeads.length,1);
+    const pctLeads=Math.round(n/totalLeads*100);
+    html+='<div class="funnel-row">'+
+      '<div class="funnel-label">'+e.key+'</div>'+
+      '<div class="funnel-bar-wrap"><div class="funnel-fill" style="width:'+pct+'%;background:'+e.color+'"><span>'+n+'</span></div></div>'+
+      '<div class="funnel-meta"><div>USD '+fmtK(val)+'</div><div style="font-size:9px;color:var(--mid)">'+pctLeads+'% del total</div></div>'+
+      '<div class="funnel-arrow">'+(i>0?conv:'')+'</div>'+
+    '</div>';
+  });
+  f.innerHTML=html;
+}
+
+// ── Forecast ponderado ────────────────────────────────────────────────────────
+function renderForecast(){
+  const row=document.getElementById('forecast-row');
+  const stages=ETAPAS.filter(e=>ACTIVAS.includes(e.key));
+  row.innerHTML=stages.map(e=>{
+    const leads=allLeads.filter(l=>l.etapa===e.key);
+    const val=leads.reduce((s,l)=>s+(l.totalPipeline||l.total||0),0)*e.prob;
+    return '<div class="forecast-card">'+
+      '<div class="forecast-label">'+e.key+'</div>'+
+      '<div class="forecast-val">USD '+fmtK(val)+'</div>'+
+      '<div class="forecast-note">'+Math.round(e.prob*100)+'% prob. × '+leads.length+' leads</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+function renderCharts(){
+  // Por modelo — iterate cotizaciones for grouped leads
+  const byModelo={};
+  allLeads.forEach(l=>{
+    const cots=l.cotizaciones||[{linea:l.linea,modelo:l.modelo,total:l.total}];
+    cots.forEach(c=>{const k=(c.linea||l.linea||'')+' '+(c.modelo||l.modelo||'');byModelo[k]=(byModelo[k]||0)+(c.total||0);});
+  });
+  renderBarChart('chart-modelo',byModelo,'#1A5276',v=>'USD '+fmtK(v));
+
+  // Por vendedor (cantidad leads) — fixed vendor list
+  const VENDEDORES=['Pablo Spinetto','Leandro Seoane','Hector Bermudez','Victoria Lopez Aybar'];
+  const byVend={};
+  VENDEDORES.forEach(v=>byVend[v]=0);
+  allLeads.forEach(l=>{
+    var vend=l.vendedor||'';
+    if(VENDEDORES.includes(vend))byVend[vend]++;
+    else if(vend&&vend!=='—') byVend['Otros']=(byVend['Otros']||0)+1;
+  });
+  // Remove zeros
+  Object.keys(byVend).forEach(k=>{if(!byVend[k])delete byVend[k];});
+  renderBarChart('chart-vendedor',byVend,'#7D3C98',v=>v+' leads');
+
+  // Por línea — iterate cotizaciones, force both categories
+  const byLinea={'LABO Madera':0,'LABO Modular':0};
+  allLeads.forEach(l=>{
+    const cots=l.cotizaciones||[{linea:l.linea,total:l.total}];
+    cots.forEach(c=>{if(c.linea)byLinea[c.linea]=(byLinea[c.linea]||0)+(c.total||0);});
+  });
+  renderBarChart('chart-linea',byLinea,'#D4870A',v=>'USD '+fmtK(v));
+
+  // Conversión por vendedor
+  const VENDEDORES2=['Pablo Spinetto','Leandro Seoane','Hector Bermudez','Victoria Lopez Aybar'];
+  const convVend={};
+  VENDEDORES2.forEach(v=>convVend[v]={g:0,t:0});
+  allLeads.forEach(l=>{
+    var vend=l.vendedor||'';
+    if(!VENDEDORES2.includes(vend))return;
+    if(l.etapa==='Cerrado ganado')convVend[vend].g++;
+    if(l.etapa==='Cerrado ganado'||l.etapa==='Cerrado perdido')convVend[vend].t++;
+  });
+  const convPct={};
+  Object.entries(convVend).forEach(([v,d])=>{if(d.t>0)convPct[v]=Math.round(d.g/d.t*100);else convPct[v]=0;});
+  renderBarChart('chart-conv-vendedor',convPct,'#1E8449',v=>v+'%',100);
+}
+
+function renderBarChart(id,data,color,fmt,maxVal){
+  const el=document.getElementById(id);
+  const entries=Object.entries(data).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!entries.length){el.innerHTML='<div class="td-muted" style="font-size:12px;padding:8px">Sin datos</div>';return;}
+  const max=maxVal||Math.max(...entries.map(e=>e[1]))||1;
+  el.innerHTML=entries.map(([k,v])=>
+    '<div class="bar-row"><div class="bar-key" title="'+esc(k)+'">'+esc(k)+'</div>'+
+    '<div class="bar-track"><div class="bar-fill" style="width:'+Math.max(v/max*100,1)+'%;background:'+color+'"></div></div>'+
+    '<div class="bar-val">'+fmt(v)+'</div></div>'
+  ).join('');
+}
+
+// ── Motivos de pérdida ────────────────────────────────────────────────────────
+function renderMotivos(){
+  const perdidas=allLeads.filter(l=>l.etapa==='Cerrado perdido'&&l.motivoPerdida);
+  const counts={};
+  perdidas.forEach(l=>{counts[l.motivoPerdida]=(counts[l.motivoPerdida]||0)+1;});
+  const el=document.getElementById('motivos-list');
+  if(!Object.keys(counts).length){el.innerHTML='<div class="td-muted" style="font-size:12px">Sin datos de pérdida registrados aún.</div>';return;}
+  const max=Math.max(...Object.values(counts));
+  el.innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+    '<div class="motivo-row"><div class="motivo-key">'+esc(k)+'</div>'+
+    '<div class="motivo-bar-track"><div class="motivo-bar-fill" style="width:'+v/max*100+'%"></div></div>'+
+    '<div class="motivo-pct">'+v+'</div></div>'
+  ).join('');
+}
+
+// ── Tendencia mensual ─────────────────────────────────────────────────────────
+function renderTrend(){
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleDateString('es-AR',{month:'short'})});
+  }
+  const counts=months.map(m=>allLeads.filter(l=>{const d=new Date(l.fecha);return d.getFullYear()===m.year&&d.getMonth()===m.month;}).length);
+  const max=Math.max(...counts,1);
+  document.getElementById('trend-bars').innerHTML=months.map((m,i)=>
+    '<div class="trend-bar-col">'+
+    '<div class="trend-bar-val">'+counts[i]+'</div>'+
+    '<div class="trend-bar" style="height:'+Math.max(counts[i]/max*64,2)+'px"></div>'+
+    '<div class="trend-bar-label">'+m.label+'</div>'+
+    '</div>'
+  ).join('');
+}
+
+// ── Velocidad entre etapas ────────────────────────────────────────────────────
+function renderVelocity(){
+  const etapaOrder=['Cotizado','Propuesta enviada','En negociación','Cerrado ganado'];
+  const transitions=[
+    {from:'Cotizado',to:'Propuesta enviada',label:'Cotizado → Propuesta'},
+    {from:'Propuesta enviada',to:'En negociación',label:'Propuesta → Negociación'},
+    {from:'En negociación',to:'Cerrado ganado',label:'Negociación → Ganado'},
+  ];
+  // Use actividad log to estimate velocity
+  // Fallback: use fecha difference from creation
+  const ganadas=allLeads.filter(l=>l.etapa==='Cerrado ganado');
+  const totalDays=ganadas.map(l=>{
+    const start=new Date(l.fecha);
+    const lastAct=l.actividad&&l.actividad.length>0?l.actividad[l.actividad.length-1].fecha:null;
+    if(!lastAct)return null;
+    const end=new Date(lastAct.split('/').reverse().join('-'));
+    const d=Math.floor((end-start)/(1000*60*60*24));
+    return d>0?d:null;
+  }).filter(d=>d!==null);
+  const avgTotal=totalDays.length>0?Math.round(totalDays.reduce((s,d)=>s+d,0)/totalDays.length):null;
+
+  const grid=document.getElementById('velocity-grid');
+  grid.innerHTML=[
+    {label:'Tiempo promedio total',val:avgTotal?avgTotal+'d':'—',sub:'cotización → cierre',icon:'⏱'},
+    {label:'Leads activos > 30 días',val:allLeads.filter(l=>ACTIVAS.includes(l.etapa)&&diasDesde(l)>30).length,sub:'requieren atención',icon:'⚠️'},
+    {label:'Cerrados este mes',val:allLeads.filter(l=>{const d=new Date(l.fecha);const n=new Date();return (l.etapa==='Cerrado ganado'||l.etapa==='Cerrado perdido')&&d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length,sub:'ganados + perdidos',icon:'✓'},
+    {label:'Velocidad pipeline',val:allLeads.filter(l=>ACTIVAS.includes(l.etapa)&&diasDesde(l)<=7).length,sub:'actividad últimos 7d',icon:'⚡'},
+  ].map(c=>'<div class="vel-card"><div class="vel-arrow">'+c.icon+'</div><div class="vel-val">'+c.val+'</div><div class="vel-label">'+c.label+'</div><div class="td-muted" style="font-size:11px">'+c.sub+'</div></div>').join('');
+}
+
+// ── Leads urgentes ────────────────────────────────────────────────────────────
+function renderUrgentes(){
+  const urgentes=allLeads.filter(l=>ACTIVAS.includes(l.etapa)&&diasDesde(l)>14).sort((a,b)=>diasDesde(b)-diasDesde(a));
+  const c=document.getElementById('urgentes-container');
+  if(!urgentes.length){c.innerHTML='<div class="empty"><div class="empty-icon">✓</div><div class="empty-text">Todos los leads tienen actividad reciente</div></div>';return;}
+  const rows=urgentes.map(l=>{
+    const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+    const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
+    return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
+      '<td><div class="td-bold">'+esc(l.cliente||'—')+'</div><div class="td-muted">'+esc(l.contacto||'')+'</div></td>'+
+      '<td class="td-mono">USD '+fmt(l.totalPipeline||l.total||0)+'</td>'+
+      '<td class="td-mono td-hot">'+diasDesde(l)+'d sin actividad</td>'+
+      '<td><span class="etapa '+cls+'"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</span></td>'+
+      '<td class="td-mono td-muted" style="font-size:11px">'+esc(l.vendedor||'—')+'</td>'+
+    '</tr>';
+  }).join('');
+  c.innerHTML='<table><thead><tr><th>Cliente</th><th>Total</th><th>Inactividad</th><th>Status</th><th>Vendedor</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+// ── Ranking por temperatura ───────────────────────────────────────────────────
+function renderRanking(){
+  const activos=allLeads.filter(l=>ACTIVAS.includes(l.etapa)).sort((a,b)=>getTempScore(b)-getTempScore(a));
+  const c=document.getElementById('ranking-container');
+  if(!activos.length){c.innerHTML='<div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Sin leads activos</div></div>';return;}
+  const rows=activos.map((l,i)=>{
+    const temp=getTemp(l);
+    const cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+    const edot=ETAPAS.find(e=>e.key===l.etapa)||ETAPAS[0];
+    return '<tr onclick="openDetail(\''+l.id+'\')" style="cursor:pointer">'+
+      '<td class="td-mono" style="width:30px;color:var(--mid)">'+(i+1)+'</td>'+
+      '<td>'+
+        (l.leadNum?'<span class="lead-num">#'+l.leadNum+'</span>':'')+
+        '<div class="td-bold">'+esc(l.cliente||'—')+'</div>'+
+        '<div class="td-muted">'+(l.ultimaCot?esc(l.ultimaCot.linea||'')+' Mod. '+esc(l.ultimaCot.modelo||''):esc(l.linea||'')+' Mod. '+esc(l.modelo||''))+'</div>'+
+      '</td>'+
+      '<td class="td-mono">USD '+fmt(l.totalPipeline||l.total||0)+'</td>'+
+      '<td><span class="temp temp-'+temp+'">'+(temp==='caliente'?'🔥':temp==='tibio'?'🌤':'❄️')+' '+temp+'</span></td>'+
+      '<td><span class="etapa '+cls+'"><span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+'</span></td>'+
+      '<td class="td-mono td-muted" style="font-size:11px">'+diasDesde(l)+'d</td>'+
+    '</tr>';
+  }).join('');
+  c.innerHTML='<table><thead><tr><th>#</th><th>Cliente</th><th>Total</th><th>Temperatura</th><th>Status</th><th>Días</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+// ── Detail panel ──────────────────────────────────────────────────────────────
+function openDetail(id){
+  var l=allLeads.find(function(x){return x.id===id;});
+  if(!l)return;
+  currentLeadId=id;
+  document.getElementById('dp-title').textContent=(l.leadNum?'#'+l.leadNum+' \u2014 ':'')+( l.cliente||'Lead');
+  var cls=ETAPA_CLS[l.etapa]||'e-cotizado';
+  var edot=ETAPAS.find(function(e){return e.key===l.etapa;})||ETAPAS[0];
+  var temp=getTemp(l);
+  var cots=l.cotizaciones||[];
+
+  // Cotizaciones HTML
+  var cotsHtml='';
+  if(cots.length>0){
+    var cotCards=cots.map(function(c){
+      var d=c.fecha?new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+      var lbCls=(c.linea||'')==='LABO Madera'?'lb-madera':'lb-modular';
+      var notasHtml=c.notas&&c.notas!=='—'?'<div class="cot-card-field" style="grid-column:1/-1"><label>Notas</label><span>'+esc(c.notas)+'</span></div>':'';
+      var pdfBtn=c.pdfUrl
+        ? '<a class="cot-pdf-btn" href="'+esc(c.pdfUrl)+'" target="_blank" rel="noopener" title="Abrir PDF en SharePoint'+(c.pdfName?' ('+esc(c.pdfName)+')':'')+'">PDF'+(c.pdfVersion?' v'+esc(String(c.pdfVersion)):'')+' ↗</a>'
+        : '<span class="cot-pdf-none">sin PDF</span>';
+      return '<div class="cot-card">'+
+        '<div class="cot-card-hdr">'+
+          '<span class="cot-card-num">OC N\u00b0 '+esc(c.num||'—')+'</span>'+
+          '<span style="display:flex;align-items:center;gap:8px">'+
+            '<span class="cot-card-date">'+d+'</span>'+pdfBtn+
+          '</span>'+
+        '</div>'+
+        '<div class="cot-card-body">'+
+          '<div class="cot-card-field"><label>L\u00ednea</label><span><span class="lb '+lbCls+'">'+esc(c.linea||'—')+'</span></span></div>'+
+          '<div class="cot-card-field"><label>Modelo</label><span>'+esc(c.modelo||'—')+' ('+esc(String(c.sup||''))+'m\u00b2)</span></div>'+
+          '<div class="cot-card-field"><label>Cantidad</label><span>'+esc(String(c.cant||1))+' ud.</span></div>'+
+          '<div class="cot-card-field"><label>Cond. pago</label><span>'+esc(c.pago||'—')+'</span></div>'+
+          '<div class="cot-card-field"><label>Plazo</label><span>'+esc(c.plazo||'—')+'</span></div>'+
+          notasHtml+
+        '</div>'+
+        '<div class="cot-card-total"><span class="cot-card-total-label">Total</span><span class="cot-card-total-val">USD '+fmt(c.total)+'</span></div>'+
+      '</div>';
+    }).join('');
+    var totalRow=cots.length>1?'<div class="cot-card-total" style="background:#F5F3ED;border:1px solid var(--border)"><span class="cot-card-total-label" style="color:var(--mid)">PIPELINE TOTAL CLIENTE</span><span class="cot-card-total-val" style="color:var(--black)">USD '+fmt(l.totalPipeline||0)+'</span></div>':'';
+    cotsHtml='<div class="cot-list">'+cotCards+totalRow+'</div>';
+  }else{
+    cotsHtml='<div class="td-muted" style="padding:12px;font-size:12px">Sin cotizaciones registradas.</div>';
+  }
+
+  // Activity timeline HTML
+  var acts=l.actividad||[];
+  var timelineHtml='';
+  if(acts.length>0){
+    var entries=[].concat(acts).reverse().map(function(a){
+      var isEtapa=a.texto&&a.texto.indexOf('Etapa:')===0;
+      return '<div class="act-entry">'+
+        '<div class="act-dot '+(isEtapa?'is-etapa':'is-nota')+'">'+(isEtapa?'\u2192':'\u270e')+'</div>'+
+        '<div class="act-body">'+
+          '<div class="act-fecha-txt">'+esc(a.fecha)+'</div>'+
+          '<div class="act-texto-txt">'+esc(a.texto)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    timelineHtml='<div class="act-timeline">'+entries+'</div>';
+  }else{
+    timelineHtml='<div class="td-muted" style="padding:8px 0;font-size:12px">Sin actividad registrada a\u00fan.</div>';
+  }
+
+  // Build etapa menu
+  var etapaMenuItems=ETAPAS.map(function(e){
+    return '<button class="'+ETAPA_CLS[e.key]+'" onclick="changeEtapa(\''+l.id+'\',\''+e.key+'\',true)">'+
+      '<span class="etapa-dot" style="background:'+e.color+'"></span>'+e.key+'</button>';
+  }).join('');
+
+  // Assemble panel
+  var html='';
+  if(temp) html+='<div style="margin-bottom:14px"><span class="temp temp-'+temp+'">'+(temp==='caliente'?'\uD83D\uDD25':temp==='tibio'?'\uD83C\uDF24':'\u2744\uFE0F')+' '+temp+'</span></div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Status</div>'+
+    '<div class="etapa-dropdown" id="dp_dd_panel">'+
+      '<button class="etapa '+cls+'" style="font-size:10px" onclick="toggleDD(\'dp_dd_panel\')">'+
+        '<span class="etapa-dot" style="background:'+edot.color+'"></span>'+esc(l.etapa)+
+      '</button>'+
+      '<div class="etapa-menu">'+etapaMenuItems+'</div>'+
+    '</div>'+
+  '</div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Contacto</div><div class="dp-grid">'+
+    field('Nombre',l.contacto||'—')+
+    field('Email','<a href="mailto:'+esc(l.email||'')+'">'+esc(l.email||'—')+'</a>')+
+    field('Tel\u00e9fono',l.tel||'—')+
+    field('Terreno',l.terreno||'—')+
+    field('Vendedor',l.vendedor||'—')+
+    field('Lugar',l.lugar||'—')+
+  '</div></div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Cotizaciones ('+cots.length+')</div>'+cotsHtml+'</div>';
+  if(l.motivoPerdida) html+='<div class="dp-section"><div class="dp-section-title">Motivo de p\u00e9rdida</div><div style="font-size:13px;font-weight:600;color:var(--red)">'+esc(l.motivoPerdida)+'</div></div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Registrar actividad</div>'+
+    '<textarea class="nota-input" id="nota-input" placeholder="Llamado, reuni\u00f3n, propuesta enviada..."></textarea>'+
+    '<button class="btn-nota" onclick="addNota()">+ Registrar</button>'+
+  '</div>';
+  html+='<div class="dp-section"><div class="dp-section-title">Historial de actividad</div>'+timelineHtml+'</div>';
+
+  document.getElementById('dp-body').innerHTML=html;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function field(l,v){return '<div class="dp-field"><label>'+l+'</label><span>'+v+'</span></div>';}
+function closeDetailPanel(){document.getElementById('detailOverlay').classList.remove('open');currentLeadId=null;}
+function closeDetail(e){if(e.target===document.getElementById('detailOverlay'))closeDetailPanel();}
+
+// ── Etapa change ──────────────────────────────────────────────────────────────
+function changeEtapa(id,etapa,fromDetail){
+  if(etapa==='Cerrado perdido'){
+    pendingEtapaChange={id,fromDetail};
+    openMotivoModal();
+    return;
+  }
+  _applyEtapa(id,etapa,fromDetail);
+}
+function _applyEtapa(id,etapa,fromDetail,motivo){
+  const l=allLeads.find(x=>x.id===id);if(!l)return;
+  l.etapa=etapa;
+  if(motivo)l.motivoPerdida=motivo;
+  if(!l.actividad)l.actividad=[];
+  l.actividad.push({fecha:new Date().toLocaleDateString('es-AR'),texto:'Etapa: '+etapa+(motivo?' — '+motivo:'')});
+  saveLeadToDB(l).catch(e=>console.warn(e));
+  document.querySelectorAll('.etapa-dropdown.open').forEach(d=>d.classList.remove('open'));
+  render();
+  if(fromDetail&&currentLeadId)openDetail(currentLeadId);
+}
+
+function toggleDD(id){
+  const el=document.getElementById(id);if(!el)return;
+  const was=el.classList.contains('open');
+  document.querySelectorAll('.etapa-dropdown.open').forEach(d=>d.classList.remove('open'));
+  if(!was)el.classList.add('open');
+}
+
+// ── Motivo pérdida modal ──────────────────────────────────────────────────────
+function openMotivoModal(){selectedMotivo=null;document.getElementById('motivo-otro').style.display='none';document.querySelectorAll('.modal-opt').forEach(o=>o.classList.remove('selected'));document.getElementById('motivoModal').classList.add('open');}
+function selMotivo(el,val){document.querySelectorAll('.modal-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');selectedMotivo=val;document.getElementById('motivo-otro').style.display=val==='Otro'?'block':'none';}
+function cancelMotivo(){document.getElementById('motivoModal').classList.remove('open');pendingEtapaChange=null;}
+function confirmarMotivo(){
+  if(!selectedMotivo){alert('Seleccioná un motivo');return;}
+  const motivo=selectedMotivo==='Otro'?document.getElementById('motivo-otro').value.trim()||'Otro':selectedMotivo;
+  document.getElementById('motivoModal').classList.remove('open');
+  if(pendingEtapaChange){_applyEtapa(pendingEtapaChange.id,'Cerrado perdido',pendingEtapaChange.fromDetail,motivo);pendingEtapaChange=null;}
+}
+
+// ── Actividad ─────────────────────────────────────────────────────────────────
+function addNota(){
+  if(!currentLeadId)return;
+  const inp=document.getElementById('nota-input');
+  const texto=inp.value.trim();if(!texto)return;
+  const l=allLeads.find(x=>x.id===currentLeadId);if(!l)return;
+  if(!l.actividad)l.actividad=[];
+  l.actividad.push({fecha:new Date().toLocaleDateString('es-AR'),texto});
+  inp.value='';
+  saveLeadToDB(l).catch(e=>console.warn(e));
+  openDetail(currentLeadId);
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderFast();
+}
+function filterSearch(v){searchVal=v;renderFast();}
+function setSort(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}renderFast();}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(id,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const cols=['num','fecha','cliente','contacto','email','tel','vendedor','linea','modelo','sup','cant','total','etapa','motivoPerdida','lugar','pago','plazo'];
+  const csv=cols.join(',')+'\n'+allLeads.map(l=>cols.map(c=>'"'+String(l[c]||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='LABO_CRM_'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function diasDesde(l){
+  if(!ACTIVAS.includes(l.etapa))return 0;
+  var base=null;
+  // Try last activity date (format d/m/yyyy)
+  var ultAct=l.actividad&&l.actividad.length?l.actividad[l.actividad.length-1].fecha:null;
+  if(ultAct){
+    var parts=String(ultAct).split('/');
+    if(parts.length===3){
+      var dd=parseInt(parts[0],10),mm=parseInt(parts[1],10),yy=parseInt(parts[2],10);
+      if(!isNaN(dd)&&!isNaN(mm)&&!isNaN(yy)){
+        base=new Date(yy,mm-1,dd);
+      }
+    }
+  }
+  // Fallback to last cotización date or lead creation (ISO format)
+  if(!base||isNaN(base.getTime())){
+    var iso=l.fechaUltimaCot||l.fecha;
+    if(iso){base=new Date(iso);}
+  }
+  if(!base||isNaN(base.getTime()))return 0;
+  var diff=Math.floor((new Date()-base)/(1000*60*60*24));
+  return isNaN(diff)?0:Math.max(0,diff);
+}
+function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtK(n){return n>=1000000?Math.round(n/1000)+'K':n>=1000?Math.round(n/1000)+'K':String(Math.round(n));}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+document.addEventListener('click',function(e){if(!e.target.closest('.etapa-dropdown'))document.querySelectorAll('.etapa-dropdown.open').forEach(d=>d.classList.remove('open'));});
+
+// ── KPI click filters ─────────────────────────────────────────────────────────
+function setKpiFilter(type){
+  activeFilter='_kpi:'+type;
+  document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('active'));
+  renderFast();
+  setTimeout(function(){
+    var tw=document.getElementById('table-container');
+    if(tw)tw.scrollIntoView({behavior:'smooth',block:'start'});
+  },150);
+}
+
+// El arranque del CRM (loadData) ahora lo dispara el gate de acceso tras validar el dominio.
+// Auto-refresh cada 30s solo si no hay un panel de detalle abierto (no interrumpe al usuario)
+setInterval(function(){
+  var overlay=document.getElementById('detailOverlay');
+  var detailOpen=overlay&&overlay.classList.contains('open');
+  var modalOpen=document.getElementById('motivoModal')&&document.getElementById('motivoModal').classList.contains('open');
+  if(!detailOpen&&!modalOpen)loadData();
+},30000);
+
+/* ════════════════ COTIZADOR (generación de oferta + PDF + SharePoint) ════════════════ */
 const MARKUP=1.4;
 const COSTOS={
   MAD_S:{sup:50,pb:49360.75,op:{"Platea de fundación + Granítico":9833.6,"Termomecánica por AA Split":2240,"Piso Radiante":4032,"Línea Blanca":1680,"Paquete Solar":0,"Estufa a Leña":0,"Pérgola":0,"Deck":0,"Grúa":2912}},
@@ -857,15 +2180,6 @@ function calcLog(m,km){if(!km||km<100)return 0;const t=(exportVal?COSTOS_LOG_TAR
 function platePrice(m){return exportVal?(PLATEA_EXPORT[m]||0):(COSTOS[m].op['Platea de fundación + Granítico']||0);}
 function calcMontaje(m,km){if(!km||km<1)return 0;const t=COSTOS_MONTAJE[m];const c=km<=100?t[0]:km<=500?t[1]:km<=1200?t[2]:t[3];return c*MARKUP;}
 
-// ── Supabase config (datos del CRM) ──────────────────────────────────────────
-const SUPABASE_URL='https://rhajlvmneyvgqlyeyjsd.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYWpsdm1uZXl2Z3FseWV5anNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODc3MDYsImV4cCI6MjA5Njc2MzcwNn0.iXkFP1T4DEhPtzGn7xtIfM7msh9Ft35DZUvVtCErXOk';
-async function _sbFetch(path,opts){
-  return fetch(SUPABASE_URL+'/rest/v1/'+path,{
-    ...opts,
-    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...(opts&&opts.headers)}
-  });
-}
 // Increment a shared counter atomically via Postgres RPC function
 async function _sbNextCounter(name,fallbackStart){
   try{
@@ -959,7 +2273,117 @@ async function initAll(){
     }
   }catch(e){console.warn('Auth error on load:',e);}
 }
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initAll);}else{initAll();}
+// Cotizador init: solo construye UI. El login MSAL se difiere hasta generar PDF.
+// El arranque real lo controla el gate de acceso (gateBoot) tras validar el dominio.
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',gateBoot);}else{gateBoot();}
+
+// ── GATE DE ACCESO (login + validación de dominio @4housing.com.ar) ──────────
+var _gateAccount=null;
+function _gateShowError(msg){
+  var e=document.getElementById('lg-err');
+  if(e){e.textContent=msg;e.classList.add('show');}
+  document.getElementById('lg-state-login').style.display='';
+  document.getElementById('lg-state-loading').style.display='none';
+  var b=document.getElementById('lg-login-btn');if(b)b.disabled=false;
+}
+function _gateEmailOf(acc){
+  if(!acc)return '';
+  var u=(acc.username||'').toLowerCase();
+  if(u)return u;
+  try{var c=acc.idTokenClaims||{};return String(c.preferred_username||c.email||'').toLowerCase();}catch(e){return '';}
+}
+function _gateDomainOk(email){
+  var dom='@'+String(MSAL_CONFIG.allowedDomain).toLowerCase();
+  return email.slice(-dom.length)===dom;
+}
+// Arranca la app real una vez validado el acceso
+function _gateEnterApp(){
+  var g=document.getElementById('authGate');
+  if(g)g.style.display='none';
+  try{initApp();}catch(e){console.warn('initApp:',e);}
+  try{loadData();}catch(e){console.warn('loadData:',e);}
+}
+// Asegura instancia MSAL inicializada (reusa la misma del cotizador)
+async function _gateEnsureMsal(){
+  var w=0;
+  while(typeof msal==='undefined'&&w<5000){await new Promise(function(r){setTimeout(r,100);});w+=100;}
+  if(typeof msal==='undefined')throw new Error('No se pudo cargar el módulo de Microsoft. Recargá la página.');
+  if(!_msalInst){
+    _msalInst=new msal.PublicClientApplication({
+      auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},
+      cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:true,secureCookies:false}
+    });
+    await _msalInst.initialize();
+  }
+}
+// Login disparado por el botón del gate
+async function gateLogin(){
+  var btn=document.getElementById('lg-login-btn');if(btn)btn.disabled=true;
+  document.getElementById('lg-state-login').style.display='none';
+  document.getElementById('lg-state-loading').style.display='';
+  try{
+    await _gateEnsureMsal();
+    var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if(isSafari){
+      // Safari: redirect (el resultado se procesa en gateBoot al recargar)
+      sessionStorage.setItem('labo_gate_pending','1');
+      await _msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
+      return;
+    }
+    var res=await _msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
+    var acc=(res&&res.account)||(_msalInst.getAllAccounts()[0]);
+    await _gateValidate(acc,(res&&res.accessToken)||null);
+  }catch(e){
+    console.warn('gateLogin:',e);
+    _gateShowError('No se pudo completar el inicio de sesión. Probá de nuevo.');
+  }
+}
+// Valida la cuenta: dominio correcto -> entra; incorrecto -> rechaza y cierra sesión
+async function _gateValidate(acc,token){
+  var email=_gateEmailOf(acc);
+  if(!email){_gateShowError('No se pudo leer el correo de la cuenta. Probá de nuevo.');return;}
+  if(!_gateDomainOk(email)){
+    // Cuenta de otro dominio: rechazar y limpiar sesión para no dejarla cacheada
+    try{await _msalInst.logoutPopup({account:acc});}catch(e){try{_msalInst.clearCache&&_msalInst.clearCache();}catch(e2){}}
+    _gateShowError('La cuenta '+email+' no pertenece a @'+MSAL_CONFIG.allowedDomain+'. Acceso denegado.');
+    return;
+  }
+  _gateAccount=acc;
+  if(token)_gToken=token;
+  _gateEnterApp();
+}
+// Al cargar: intenta sesión silenciosa; si ya hay cuenta válida del dominio, entra sin pedir click
+async function gateBoot(){
+  try{
+    await _gateEnsureMsal();
+    // Procesar retorno de redirect (Safari)
+    var resp=null;
+    try{resp=await _msalInst.handleRedirectPromise();}catch(e){console.warn('gate redirect:',e);}
+    if(resp&&resp.account){
+      sessionStorage.removeItem('labo_gate_pending');
+      await _gateValidate(resp.account,resp.accessToken||null);
+      return;
+    }
+    // ¿Hay ya una cuenta logueada? Validar silenciosamente
+    var accs=_msalInst.getAllAccounts();
+    if(accs.length>0){
+      var acc=accs[0];
+      var email=_gateEmailOf(acc);
+      if(email&&_gateDomainOk(email)){
+        try{
+          var r=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc});
+          _gToken=r.accessToken;
+        }catch(e){/* sin token aún; se pedirá al generar PDF */}
+        _gateAccount=acc;
+        _gateEnterApp();
+        return;
+      }
+    }
+  }catch(e){console.warn('gateBoot:',e);}
+  // Sin sesión válida: mostrar pantalla de login
+  document.getElementById('lg-state-login').style.display='';
+  document.getElementById('lg-state-loading').style.display='none';
+}
 
 function buildGrid(){
   const gm=document.getElementById('mgrid-mad');
@@ -970,7 +2394,7 @@ function buildGrid(){
     el.className='mcard '+(LINEA[k]==='madera'?'mcard-madera':'mcard-modular');
     el.id='mc_'+k;
     el.onclick=()=>selModel(k);
-    el.innerHTML=`<div class="cbadge">✓</div><div class="mname">${DNAME[k]}</div><div class="msup">${d.sup} m²</div><div class="mprice">USD ${fmt(d.pb)}</div>`;
+    el.innerHTML=`<div class="cbadge">✓</div><div class="mname">${DNAME[k]}</div><div class="msup">${d.sup} m²</div><div class="mprice">USD ${fmtCot(d.pb)}</div>`;
     (LINEA[k]==='madera'?gm:gmod).appendChild(el);
   });
 }
@@ -980,17 +2404,17 @@ function selModel(k){sel=k;document.querySelectorAll('.mcard').forEach(c=>c.clas
 function getCant(){return parseInt(document.getElementById('cant').value)||1;}
 function buildOpts(k){const d=COSTOS[k];const list=document.getElementById('olist');list.innerHTML='';
 const cant=getCant();
-Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;const displayName=getOptLabel(name);const dispPrice=(name==='Platea de fundación + Granítico')?platePrice(k):price;row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${displayName}</span></div><span class="oprice" id="pr_${name}">${dispPrice===0?'N/D':'USD '+fmt(dispPrice*cant)}</span>`;list.appendChild(row);});
+Object.entries(d.op).forEach(([name,price])=>{const na=false;const row=document.createElement('div');row.className='orow';row.id='or_'+name;const displayName=getOptLabel(name);const dispPrice=(name==='Platea de fundación + Granítico')?platePrice(k):price;row.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_${name}" onclick="togOpt('${name}',true)">✓</button><button id="no_${name}" onclick="togOpt('${name}',false)" class="active-no">—</button></div><span class="oname">${displayName}</span></div><span class="oprice" id="pr_${name}">${dispPrice===0?'N/D':'USD '+fmtCot(dispPrice*cant)}</span>`;list.appendChild(row);});
 const tarifa=COSTOS_LOG_TARIFA[k];
 // Toggle de exportación
 const exrow=document.createElement('div');exrow.className='orow'+(exportVal?' on':'');exrow.id='or_Export';
 exrow.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_Export" onclick="togExport(true)" ${exportVal?'class="active-yes"':''}>✓</button><button id="no_Export" onclick="togExport(false)" ${!exportVal?'class="active-no"':''}>—</button></div><span class="oname">¿Con exportación? (Uruguay)</span><span class="kmhint" style="margin-left:6px">cambia tarifa logística y platea</span></div><span class="oprice" id="pr_Export">${exportVal?'Sí':'No'}</span>`;list.appendChild(exrow);
 const lrow=document.createElement('div');lrow.className='lrow';lrow.id='lrow';
-const tarifaShow=exportVal?COSTOS_LOG_TARIFA_EXPORT[k]:COSTOS_LOG_TARIFA[k];lrow.innerHTML=`<div class="lleft"><span class="lname">LOGÍSTICA</span><div class="kmwrap"><label>Distancia</label><input type="number" id="kminput" placeholder="mín. 100" min="100" step="1" oninput="onKm(this.value)" onblur="if(this.value&&parseInt(this.value)<100){this.value=100;onKm(100);}"><span class="kmhint">km</span></div><span class="kmhint" id="tarifaHint">${tarifaShow>0?`USD ${fmt(tarifaShow)}/km${exportVal?' · exportación':' · desc. 30% si >100 km'}`:'⚠ tarifa no configurada → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="lprice">—</span>`;list.appendChild(lrow);
+const tarifaShow=exportVal?COSTOS_LOG_TARIFA_EXPORT[k]:COSTOS_LOG_TARIFA[k];lrow.innerHTML=`<div class="lleft"><span class="lname">LOGÍSTICA</span><div class="kmwrap"><label>Distancia</label><input type="number" id="kminput" placeholder="mín. 100" min="100" step="1" oninput="onKm(this.value)" onblur="if(this.value&&parseInt(this.value)<100){this.value=100;onKm(100);}"><span class="kmhint">km</span></div><span class="kmhint" id="tarifaHint">${tarifaShow>0?`USD ${fmtCot(tarifaShow)}/km${exportVal?' · exportación':' · desc. 30% si >100 km'}`:'⚠ tarifa no configurada → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="lprice">—</span>`;list.appendChild(lrow);
 const hasMontaje=COSTOS_MONTAJE[k].some(v=>v>0);const mrow=document.createElement('div');mrow.className='orow'+(hasMontaje?'':' na');mrow.id='or_Montaje';
 mrow.innerHTML=`<div class="oleft"><div class="toggle-btn"><button id="yes_Montaje" onclick="togOpt('Montaje',true)" ${!hasMontaje?'disabled':''}>✓</button><button id="no_Montaje" onclick="togOpt('Montaje',false)" ${!hasMontaje?'disabled':''} class="active-no">—</button></div><span class="oname">Montaje</span><span class="kmhint" style="margin-left:6px">${hasMontaje?'(según km ingresados)':'⚠ tramos no configurados → ⚙ Actualizar Costos'}</span></div><span class="oprice" id="pr_Montaje">—</span>`;list.appendChild(mrow);}
 
-function togOpt(name,v){opts[name]=v;const row=document.getElementById('or_'+name);if(row){v?row.classList.add('on'):row.classList.remove('on');}const yb=document.getElementById('yes_'+name);const nb=document.getElementById('no_'+name);if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);if(name==='Montaje'&&kmVal){const mp=v?calcMontaje(sel,kmVal):0;document.getElementById('pr_Montaje').textContent=(v&&mp>0)?'USD '+fmt(mp):'—';}upd();}
+function togOpt(name,v){opts[name]=v;const row=document.getElementById('or_'+name);if(row){v?row.classList.add('on'):row.classList.remove('on');}const yb=document.getElementById('yes_'+name);const nb=document.getElementById('no_'+name);if(yb)yb.classList.toggle('active-yes',v);if(nb)nb.classList.toggle('active-no',!v);if(name==='Montaje'&&kmVal){const mp=v?calcMontaje(sel,kmVal):0;document.getElementById('pr_Montaje').textContent=(v&&mp>0)?'USD '+fmtCot(mp):'—';}upd();}
 
 function togExport(v){
   exportVal=v;
@@ -1001,11 +2425,11 @@ function togExport(v){
   // Update tarifa hint text
   const tarifaShow=v?COSTOS_LOG_TARIFA_EXPORT[sel]:COSTOS_LOG_TARIFA[sel];
   const hint=document.getElementById('tarifaHint');
-  if(hint&&tarifaShow>0){hint.textContent=`USD ${fmt(tarifaShow)}/km${v?' · exportación':' · desc. 30% si >100 km'}`;}
+  if(hint&&tarifaShow>0){hint.textContent=`USD ${fmtCot(tarifaShow)}/km${v?' · exportación':' · desc. 30% si >100 km'}`;}
   upd();
 }
 
-function onKm(v){var raw=parseInt(v);if(raw>0&&raw<100){var inp=document.getElementById('kminput');if(inp){inp.style.borderColor='var(--red)';}kmVal=null;}else{var inp2=document.getElementById('kminput');if(inp2)inp2.style.borderColor='';kmVal=(!v||v===''||isNaN(raw)||raw<100)?null:raw;}const cant=getCant();const lp=kmVal?calcLog(sel,kmVal):0;const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;document.getElementById('lprice').textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';document.getElementById('pr_Montaje').textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmt(mp*cant):'—';upd();}
+function onKm(v){var raw=parseInt(v);if(raw>0&&raw<100){var inp=document.getElementById('kminput');if(inp){inp.style.borderColor='var(--red)';}kmVal=null;}else{var inp2=document.getElementById('kminput');if(inp2)inp2.style.borderColor='';kmVal=(!v||v===''||isNaN(raw)||raw<100)?null:raw;}const cant=getCant();const lp=kmVal?calcLog(sel,kmVal):0;const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;document.getElementById('lprice').textContent=(kmVal&&lp>0)?'USD '+fmtCot(lp*cant):'—';document.getElementById('pr_Montaje').textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmtCot(mp*cant):'—';upd();}
 
 // Display labels for opcionales — differ by line
 const OPT_LABELS_MADERA={
@@ -1037,17 +2461,17 @@ function refreshOptPrices(){
   Object.entries(d.op).forEach(([name,price])=>{
     const el=document.getElementById('pr_'+name);
     const dispPrice=(name==='Platea de fundación + Granítico')?platePrice(sel):price;
-    if(el&&dispPrice>0)el.textContent='USD '+fmt(dispPrice*cant);
+    if(el&&dispPrice>0)el.textContent='USD '+fmtCot(dispPrice*cant);
   });
   const lp=kmVal?calcLog(sel,kmVal):0;
   const mp=(kmVal&&opts['Montaje'])?calcMontaje(sel,kmVal):0;
   const lel=document.getElementById('lprice');
-  if(lel)lel.textContent=(kmVal&&lp>0)?'USD '+fmt(lp*cant):'—';
+  if(lel)lel.textContent=(kmVal&&lp>0)?'USD '+fmtCot(lp*cant):'—';
   const mel=document.getElementById('pr_Montaje');
-  if(mel)mel.textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmt(mp*cant):'—';
+  if(mel)mel.textContent=(kmVal&&opts['Montaje']&&mp>0)?'USD '+fmtCot(mp*cant):'—';
 }
 function upd(){if(!sel)return;refreshOptPrices();const d=COSTOS[sel];const cant=parseInt(document.getElementById('cant').value)||1;const items=getItems();const tot=items.reduce((s,i)=>s+i.precio,0);const body=document.getElementById('sbody');body.innerHTML='';// show/hide subtotal column
-document.querySelectorAll('.subtotal-col').forEach(el=>el.style.display=cant>1?'':'none');items.forEach(it=>{const pct=tot>0?(it.precio/tot*100):0;const m2=d.sup>0?(it.precio/d.sup):0;const tr=document.createElement('tr');const subtotalCell=cant>1?`<td class="pcol subtotal-col" style="color:var(--green-col,#2a6049);font-weight:700">USD ${fmt(it.precio*cant)}</td>`:'<td class="subtotal-col" style="display:none"></td>';tr.innerHTML=`<td>${it.label}</td><td class="pcol">USD ${fmt(it.precio)}</td>${subtotalCell}<td class="pcol" style="color:var(--muted);font-size:11px">${fmt(m2)}</td><td class="inccol"><div class="inc-wrap"><div class="inc-bar"><div class="inc-fill ${it.isBase?'base':'opt'}" style="width:${pct.toFixed(1)}%"></div></div><span class="inc-pct">${pct.toFixed(1)}%</span></div></td>`;body.appendChild(tr);});const tr=document.createElement('tr');tr.className='trow';const subtotalTotal=cant>1?`<td class="pcol subtotal-col"><strong>USD ${fmt(tot*cant)}</strong></td>`:'<td class="subtotal-col" style="display:none"></td>';tr.innerHTML=`<td><strong>TOTAL por unidad</strong></td><td class="pcol"><strong>USD ${fmt(tot)}</strong></td>${subtotalTotal}<td class="pcol" style="font-size:11px"><strong>${d.sup>0?fmt(tot/d.sup):'—'}</strong></td><td></td>`;body.appendChild(tr);document.getElementById('tdisplay').textContent=`USD ${fmt(tot*cant)}`;document.getElementById('pm2display').textContent=tot>0?`USD ${fmt(tot/d.sup)}/m²`:'—';document.getElementById('ctotal').textContent=cant>1?`Total ${cant} uds: USD ${fmt(tot*cant)}`:'';}
+document.querySelectorAll('.subtotal-col').forEach(el=>el.style.display=cant>1?'':'none');items.forEach(it=>{const pct=tot>0?(it.precio/tot*100):0;const m2=d.sup>0?(it.precio/d.sup):0;const tr=document.createElement('tr');const subtotalCell=cant>1?`<td class="pcol subtotal-col" style="color:var(--green-col,#2a6049);font-weight:700">USD ${fmtCot(it.precio*cant)}</td>`:'<td class="subtotal-col" style="display:none"></td>';tr.innerHTML=`<td>${it.label}</td><td class="pcol">USD ${fmtCot(it.precio)}</td>${subtotalCell}<td class="pcol" style="color:var(--muted);font-size:11px">${fmtCot(m2)}</td><td class="inccol"><div class="inc-wrap"><div class="inc-bar"><div class="inc-fill ${it.isBase?'base':'opt'}" style="width:${pct.toFixed(1)}%"></div></div><span class="inc-pct">${pct.toFixed(1)}%</span></div></td>`;body.appendChild(tr);});const tr=document.createElement('tr');tr.className='trow';const subtotalTotal=cant>1?`<td class="pcol subtotal-col"><strong>USD ${fmtCot(tot*cant)}</strong></td>`:'<td class="subtotal-col" style="display:none"></td>';tr.innerHTML=`<td><strong>TOTAL por unidad</strong></td><td class="pcol"><strong>USD ${fmtCot(tot)}</strong></td>${subtotalTotal}<td class="pcol" style="font-size:11px"><strong>${d.sup>0?fmtCot(tot/d.sup):'—'}</strong></td><td></td>`;body.appendChild(tr);document.getElementById('tdisplay').textContent=`USD ${fmtCot(tot*cant)}`;document.getElementById('pm2display').textContent=tot>0?`USD ${fmtCot(tot/d.sup)}/m²`:'—';document.getElementById('ctotal').textContent=cant>1?`Total ${cant} uds: USD ${fmtCot(tot*cant)}`:'';}
 
 function goStep(n){
   if(n>1&&n<4&&!sel){
@@ -1072,7 +2496,7 @@ function goStep(n){
 function gv(id){return document.getElementById(id).value||'—';}
 function fd(s){if(!s||s==='—')return '—';const[a,m,d]=s.split('-');return`${d}/${m}/${a}`;}
 
-function buildPreview(){const d=COSTOS[sel];const cant=parseInt(document.getElementById('cant').value)||1;const items=getItems();const tot=items.reduce((s,i)=>s+i.precio,0);const totO=tot*cant;const pago=document.getElementById('oPago').value;const notas=document.getElementById('oNotas').value;const rows=items.map(it=>`<tr><td>${it.label}</td><td style="text-align:center">${cant}</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace">USD ${fmt(it.precio)}</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace">USD ${fmt(it.precio*cant)}</td></tr>`).join('');const binc=getBINC();const inc=binc.map(i=>`<div class="iitem"><span class="dot"></span><span>${i}</span></div>`).join('');const opDesc=getOpcionalesDesc();const incOpts=opDesc.length>0?opDesc.map(i=>`<div class="iitem"><span class="dot" style="background:var(--black)"></span><span>${i}</span></div>`).join(''):'';
+function buildPreview(){const d=COSTOS[sel];const cant=parseInt(document.getElementById('cant').value)||1;const items=getItems();const tot=items.reduce((s,i)=>s+i.precio,0);const totO=tot*cant;const pago=document.getElementById('oPago').value;const notas=document.getElementById('oNotas').value;const rows=items.map(it=>`<tr><td>${it.label}</td><td style="text-align:center">${cant}</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace">USD ${fmtCot(it.precio)}</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace">USD ${fmtCot(it.precio*cant)}</td></tr>`).join('');const binc=getBINC();const inc=binc.map(i=>`<div class="iitem"><span class="dot"></span><span>${i}</span></div>`).join('');const opDesc=getOpcionalesDesc();const incOpts=opDesc.length>0?opDesc.map(i=>`<div class="iitem"><span class="dot" style="background:var(--black)"></span><span>${i}</span></div>`).join(''):'';
 document.getElementById('pvw').innerHTML=`
 <div class="oempresa">
   <div>
@@ -1114,7 +2538,7 @@ document.getElementById('pvw').innerHTML=`
 <div class="ostitle">1. Alcance económico</div>
 <table class="oitems">
   <thead><tr><th>Concepto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit. (USD)</th><th style="text-align:right">Subtotal (USD)</th></tr></thead>
-  <tbody>${rows}<tr class="otrow"><td colspan="3"><strong>TOTAL OFERTA</strong></td><td style="font-family:'IBM Plex Mono',monospace"><strong>USD ${fmt(totO)}</strong></td></tr></tbody>
+  <tbody>${rows}<tr class="otrow"><td colspan="3"><strong>TOTAL OFERTA</strong></td><td style="font-family:'IBM Plex Mono',monospace"><strong>USD ${fmtCot(totO)}</strong></td></tr></tbody>
 </table>
 <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;letter-spacing:1px">* Valores en USD. No incluyen IVA.</div>
 <div class="ostitle">2. El precio base incluye</div>
@@ -1343,7 +2767,7 @@ function _buildOfferPDF(){
     const rh=4.5;
     if(idx%2===0){doc.setFillColor(248,247,244);doc.rect(colL_x,yL,colL_w,rh,'F');}
     doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(10,10,10);
-    [(it.pdfLabel||it.label),String(cant),`USD ${fmt(it.precio)}`,`USD ${fmt(it.precio*cant)}`].forEach((v,i)=>{
+    [(it.pdfLabel||it.label),String(cant),`USD ${fmtCot(it.precio)}`,`USD ${fmtCot(it.precio*cant)}`].forEach((v,i)=>{
       const cx=colL_x+colsL.slice(0,i).reduce((a,b)=>a+b,0);
       i===0?doc.text(v.substring(0,48),cx+2,yL+3.2):doc.text(v,cx+colsL[i]-2,yL+3.2,{align:'right'});
     });
@@ -1354,7 +2778,7 @@ function _buildOfferPDF(){
   doc.setFillColor(10,10,10);doc.rect(colL_x,yL,colL_w,6.5,'F');
   doc.setTextColor(245,244,240);doc.setFont('helvetica','bold');doc.setFontSize(7.5);
   doc.text('TOTAL OFERTA',colL_x+2,yL+4.5);
-  doc.text(`USD ${fmt(totO)}`,colL_x+colL_w-2,yL+4.5,{align:'right'});
+  doc.text(`USD ${fmtCot(totO)}`,colL_x+colL_w-2,yL+4.5,{align:'right'});
   yL+=6.5;
 
   doc.setFont('helvetica','italic');doc.setFontSize(5.5);doc.setTextColor(138,135,127);
@@ -1535,7 +2959,11 @@ const MSAL_CONFIG = {
   redirectUri: 'https://labo-comercial.github.io/labo-comercial/index.html',
   scopes: ['https://graph.microsoft.com/Files.ReadWrite.All','https://graph.microsoft.com/Sites.ReadWrite.All'],
   dataFile: 'labo_crm_data.json',
-  dataFolder: '02 PLACE - LABO/RC-01 COTIZACIONES/0000 CLIENTE - DESCRIPCION (PLANTILLAS)/03 COSTEO/LABO/LABO-CRM'
+  dataFolder: '02 PLACE - LABO/RC-01 COTIZACIONES/0000 CLIENTE - DESCRIPCION (PLANTILLAS)/03 COSTEO/LABO/LABO-CRM',
+  // Carpeta donde se guardan los PDF de ofertas (directo, sin subcarpeta "Ofertas")
+  offersFolder: '02 PLACE - LABO/RC-01 COTIZACIONES LABO',
+  // Solo pueden entrar usuarios con email de este dominio
+  allowedDomain: '4housing.com.ar'
 };
 let _msalInst=null,_gToken=null,_siteId=null,_driveId=null;
 async function _initMSAL(){
@@ -1691,7 +3119,7 @@ async function _spUploadOfferPDF(pdfBytes, meta){
       _gToken=rt.accessToken;
     }
   }catch(e){console.warn('[PDF] token refresh:',e);}
-  var folder=MSAL_CONFIG.dataFolder+'/Ofertas/'+_spOfferFolderName(meta);
+  var folder=MSAL_CONFIG.offersFolder+'/'+_spOfferFolderName(meta);
   var version=await _spNextVersion(folder);
   var fileName='v'+version+' - OC'+_spSanitize(meta.num||'SN')+' - '+_spSanitize(meta.cliente||'Cliente')+'.pdf';
   var fullPath=folder+'/'+fileName;
@@ -1787,7 +3215,7 @@ function saveLead(pdfMeta){
   }catch(e){console.warn('saveLead error:',e);return Promise.resolve();}
 }
 
-function fmt(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtCot(n){return Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 </script>
 </body>
 </html>
