@@ -2639,12 +2639,21 @@ async function _buildMergedBytes(jspdfDoc,linea,modelKey){
   return await merged.save(); // Uint8Array
 }
 
-// Rutina común: descarga local + sube a SharePoint (siempre) + guarda lead con el link
+// Rutina común: sube a SharePoint (siempre) + descarga local con el MISMO nombre + guarda lead
 async function _finishPDF(finalBytes){
-  var numPad=(gv('oNum')||'SN').replace(/[\/\\:*?"<>|]/g,'-').trim();
-  var clientName=(gv('cNombre')||'Cliente').replace(/[\/\\:*?"<>|]/g,'-').trim();
-  var dlName=numPad+' '+clientName+' - '+DNAME[sel]+'.pdf';
-  // 1) Descarga local para el usuario
+  var meta={num:gv('oNum'),cliente:gv('cNombre'),
+    linea:LINEA[sel]==='madera'?'Madera':'Modular',modelo:DNAME[sel]};
+  // 1) Subida a SharePoint primero (calcula la versión y devuelve el nombre definitivo)
+  var pdfMeta=null;
+  try{
+    pdfMeta=await _spUploadOfferPDF(finalBytes,meta);
+  }catch(e){
+    console.error('[PDF] ✗ No se pudo subir a SharePoint:',e);
+    alert('No se pudo subir el PDF a SharePoint:\n'+e.message+'\nSe descargará localmente igual y el lead se guardará sin el archivo adjunto.');
+  }
+  // 2) Descarga local con el MISMO nombre que SharePoint (incluida la versión).
+  //    Si SharePoint falló, usa el nombre base con v1 como respaldo.
+  var dlName=(pdfMeta&&pdfMeta.name)||(_spBaseName(meta)+' - v1.pdf');
   try{
     var blob=new Blob([finalBytes],{type:'application/pdf'});
     var url=URL.createObjectURL(blob);
@@ -2653,16 +2662,7 @@ async function _finishPDF(finalBytes){
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }catch(e){console.warn('Descarga local falló:',e);}
-  // 2) Subida a SharePoint (siempre) y 3) guardar lead con el link
-  var pdfMeta=null;
-  var meta={num:gv('oNum'),cliente:gv('cNombre'),
-    linea:LINEA[sel]==='madera'?'LABO Madera':'LABO Modular',modelo:DNAME[sel]};
-  try{
-    pdfMeta=await _spUploadOfferPDF(finalBytes,meta);
-  }catch(e){
-    console.error('[PDF] ✗ No se pudo subir a SharePoint:',e);
-    alert('El PDF se descargó, pero no se pudo subir a SharePoint:\n'+e.message+'\nEl lead se guardará igual sin el archivo adjunto.');
-  }
+  // 3) Guardar lead con el link
   await saveLead(pdfMeta);
 }
 
@@ -3094,13 +3094,19 @@ function _spSanitize(s){
   return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[\\/:*?"<>|#%]/g,'-').replace(/\s+/g,' ').trim();
 }
-// Construye el nombre de carpeta: "OC0168 - Cliente - LABO Modular - Studio"
-function _spOfferFolderName(meta){
+// Nombre base de la oferta, usado para carpeta, archivo y descarga local.
+// Formato: "OC{num} - {cliente} - {Madera|Modular} - {S|M|L|XL}"
+function _spBaseName(meta){
   var num=_spSanitize(meta.num||'SN');
   var cli=_spSanitize(meta.cliente||'Cliente');
   var lin=_spSanitize(meta.linea||'');
   var prod=_spSanitize(meta.modelo||'');
-  return ('OC'+num+' - '+cli+' - '+lin+' - '+prod).replace(/\s*-\s*-\s*/g,' - ').replace(/[ -]+$/,'').trim();
+  return ('OC'+num+' - '+cli+' - '+lin+' - '+prod)
+    .replace(/\s*-\s*-\s*/g,' - ').replace(/[ -]+$/,'').trim();
+}
+// Construye el nombre de carpeta: "OC0168 - Cliente - Modular - S"
+function _spOfferFolderName(meta){
+  return _spBaseName(meta);
 }
 // Cuenta cuántos PDFs hay ya en la carpeta para asignar el nº de versión (v1, v2, ...)
 async function _spNextVersion(folderPath){
@@ -3126,7 +3132,7 @@ async function _spUploadOfferPDF(pdfBytes, meta){
   }catch(e){console.warn('[PDF] token refresh:',e);}
   var folder=MSAL_CONFIG.offersFolder+'/'+_spOfferFolderName(meta);
   var version=await _spNextVersion(folder);
-  var fileName='v'+version+' - OC'+_spSanitize(meta.num||'SN')+' - '+_spSanitize(meta.cliente||'Cliente')+'.pdf';
+  var fileName=_spBaseName(meta)+' - v'+version+'.pdf';
   var fullPath=folder+'/'+fileName;
   var uploadUrl='https://graph.microsoft.com/v1.0/drives/'+_driveId+'/root:/'+encodeURI(fullPath)+':/content';
   var res=await fetch(uploadUrl,{
