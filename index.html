@@ -284,6 +284,7 @@ tr:hover td{background:#F5F3ED}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="./msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   #tab-cotizador {
     --black: #0A0A0A;
@@ -1256,6 +1257,20 @@ tr:hover td{background:#F5F3ED}
 // ── Supabase (datos) + Microsoft Azure AD (login) ────────────────────────────
 const SUPABASE_URL='https://rhajlvmneyvgqlyeyjsd.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYWpsdm1uZXl2Z3FseWV5anNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODc3MDYsImV4cCI6MjA5Njc2MzcwNn0.iXkFP1T4DEhPtzGn7xtIfM7msh9Ft35DZUvVtCErXOk';
+// Cliente Supabase (SDK) — maneja login con Microsoft y la sesión. La global 'supabase' viene del CDN.
+// Se crea esperando a que el SDK termine de cargar (mismo patrón que _initMSAL), para evitar
+// la condición de carrera donde el script corría antes de que 'supabase' estuviera disponible.
+var _sbClient=null;
+async function _ensureSbClient(){
+  if(_sbClient)return _sbClient;
+  var w=0;
+  while(typeof supabase==='undefined'&&w<8000){await new Promise(function(r){setTimeout(r,100);});w+=100;}
+  if(typeof supabase==='undefined')throw new Error('El módulo de Supabase no cargó. Revisá tu conexión y recargá.');
+  _sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  return _sbClient;
+}
+// Token de la sesión Supabase activa (lo usa _sbFetch para que RLS reconozca al usuario)
+var _sbAccessToken=null;
 
 // Convert Supabase row (snake_case) → app lead (camelCase)
 function _rowToLead(r){
@@ -1279,11 +1294,14 @@ function _leadToRow(l){
   };
 }
 async function _sbFetch(path,opts){
+  // Si hay sesión Supabase activa, usar su token (RLS reconoce al usuario @4housing).
+  // Si no, cae a la clave anon (comportamiento previo).
+  var authToken=_sbAccessToken||SUPABASE_KEY;
   return fetch(SUPABASE_URL+'/rest/v1/'+path,{
     ...opts,
     headers:{
       'apikey':SUPABASE_KEY,
-      'Authorization':'Bearer '+SUPABASE_KEY,
+      'Authorization':'Bearer '+authToken,
       'Content-Type':'application/json',
       ...(opts&&opts.headers)
     }
@@ -2286,15 +2304,15 @@ function _gateShowError(msg){
   document.getElementById('lg-state-loading').style.display='none';
   var b=document.getElementById('lg-login-btn');if(b)b.disabled=false;
 }
-function _gateEmailOf(acc){
-  if(!acc)return '';
-  var u=(acc.username||'').toLowerCase();
-  if(u)return u;
-  try{var c=acc.idTokenClaims||{};return String(c.preferred_username||c.email||'').toLowerCase();}catch(e){return '';}
-}
 function _gateDomainOk(email){
   var dom='@'+String(MSAL_CONFIG.allowedDomain).toLowerCase();
-  return email.slice(-dom.length)===dom;
+  return String(email||'').toLowerCase().slice(-dom.length)===dom;
+}
+function _gateEmailFromSession(session){
+  try{
+    var u=session&&session.user;if(!u)return '';
+    return String(u.email||(u.user_metadata&&(u.user_metadata.email||u.user_metadata.preferred_username))||'').toLowerCase();
+  }catch(e){return '';}
 }
 // Arranca la app real una vez validado el acceso
 function _gateEnterApp(){
@@ -2303,81 +2321,59 @@ function _gateEnterApp(){
   try{initApp();}catch(e){console.warn('initApp:',e);}
   try{loadData();}catch(e){console.warn('loadData:',e);}
 }
-// Asegura instancia MSAL inicializada (reusa la misma del cotizador)
-async function _gateEnsureMsal(){
-  var w=0;
-  while(typeof msal==='undefined'&&w<5000){await new Promise(function(r){setTimeout(r,100);});w+=100;}
-  if(typeof msal==='undefined')throw new Error('No se pudo cargar el módulo de Microsoft. Recargá la página.');
-  if(!_msalInst){
-    _msalInst=new msal.PublicClientApplication({
-      auth:{clientId:MSAL_CONFIG.clientId,authority:MSAL_CONFIG.authority},
-      cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:true,secureCookies:false}
-    });
-    await _msalInst.initialize();
-  }
-}
-// Login disparado por el botón del gate
+// Login disparado por el botón del gate: redirige a Microsoft vía Supabase
 async function gateLogin(){
   var btn=document.getElementById('lg-login-btn');if(btn)btn.disabled=true;
   document.getElementById('lg-state-login').style.display='none';
   document.getElementById('lg-state-loading').style.display='';
   try{
-    await _gateEnsureMsal();
-    var isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if(isSafari){
-      // Safari: redirect (el resultado se procesa en gateBoot al recargar)
-      sessionStorage.setItem('labo_gate_pending','1');
-      await _msalInst.loginRedirect({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
-      return;
-    }
-    var res=await _msalInst.loginPopup({scopes:['https://graph.microsoft.com/.default'],redirectUri:MSAL_CONFIG.redirectUri});
-    var acc=(res&&res.account)||(_msalInst.getAllAccounts()[0]);
-    await _gateValidate(acc,(res&&res.accessToken)||null);
+    try{await _ensureSbClient();}
+    catch(e){throw new Error('No se pudo cargar el módulo de Supabase. Recargá la página.');}
+    var redirectTo=window.location.origin+window.location.pathname;
+    var res=await _sbClient.auth.signInWithOAuth({
+      provider:'azure',
+      options:{scopes:'email openid profile',redirectTo:redirectTo}
+    });
+    if(res&&res.error)throw res.error;
+    // signInWithOAuth redirige el navegador; el retorno lo procesa gateBoot al recargar.
   }catch(e){
     console.warn('gateLogin:',e);
-    _gateShowError('No se pudo completar el inicio de sesión. Probá de nuevo.');
+    _gateShowError('No se pudo iniciar sesión con Microsoft. Probá de nuevo.');
   }
 }
-// Valida la cuenta: dominio correcto -> entra; incorrecto -> rechaza y cierra sesión
-async function _gateValidate(acc,token){
-  var email=_gateEmailOf(acc);
-  if(!email){_gateShowError('No se pudo leer el correo de la cuenta. Probá de nuevo.');return;}
+// Procesa la sesión: dominio correcto -> entra; incorrecto -> rechaza y cierra sesión
+async function _gateApplySession(session){
+  var email=_gateEmailFromSession(session);
+  if(!email){_gateShowError('No se pudo leer el correo de la cuenta. Probá de nuevo.');return false;}
   if(!_gateDomainOk(email)){
-    // Cuenta de otro dominio: rechazar y limpiar sesión para no dejarla cacheada
-    try{await _msalInst.logoutPopup({account:acc});}catch(e){try{_msalInst.clearCache&&_msalInst.clearCache();}catch(e2){}}
+    try{await _sbClient.auth.signOut();}catch(e){}
+    _sbAccessToken=null;
     _gateShowError('La cuenta '+email+' no pertenece a @'+MSAL_CONFIG.allowedDomain+'. Acceso denegado.');
-    return;
+    return false;
   }
-  _gateAccount=acc;
-  if(token)_gToken=token;
+  _sbAccessToken=session.access_token||null;
+  _gateAccount={username:email};
   _gateEnterApp();
+  return true;
 }
-// Al cargar: intenta sesión silenciosa; si ya hay cuenta válida del dominio, entra sin pedir click
+// Al cargar: procesa retorno de login y/o sesión existente de Supabase
 async function gateBoot(){
   try{
-    await _gateEnsureMsal();
-    // Procesar retorno de redirect (Safari)
-    var resp=null;
-    try{resp=await _msalInst.handleRedirectPromise();}catch(e){console.warn('gate redirect:',e);}
-    if(resp&&resp.account){
-      sessionStorage.removeItem('labo_gate_pending');
-      await _gateValidate(resp.account,resp.accessToken||null);
+    try{await _ensureSbClient();}
+    catch(e){
+      _gateShowError('No se pudo cargar el módulo de Supabase. Recargá la página.');
       return;
     }
-    // ¿Hay ya una cuenta logueada? Validar silenciosamente
-    var accs=_msalInst.getAllAccounts();
-    if(accs.length>0){
-      var acc=accs[0];
-      var email=_gateEmailOf(acc);
-      if(email&&_gateDomainOk(email)){
-        try{
-          var r=await _msalInst.acquireTokenSilent({scopes:['https://graph.microsoft.com/.default'],account:acc});
-          _gToken=r.accessToken;
-        }catch(e){/* sin token aún; se pedirá al generar PDF */}
-        _gateAccount=acc;
-        _gateEnterApp();
-        return;
-      }
+    // Mantener _sbAccessToken sincronizado ante refrescos de token
+    _sbClient.auth.onAuthStateChange(function(_evt,session){
+      _sbAccessToken=(session&&session.access_token)||null;
+    });
+    // ¿Hay sesión activa? (el SDK procesa el retorno de OAuth con detectSessionInUrl)
+    var got=await _sbClient.auth.getSession();
+    var session=got&&got.data&&got.data.session;
+    if(session){
+      await _gateApplySession(session);
+      return;
     }
   }catch(e){console.warn('gateBoot:',e);}
   // Sin sesión válida: mostrar pantalla de login
