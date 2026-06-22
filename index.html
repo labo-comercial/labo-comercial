@@ -1294,9 +1294,18 @@ function _leadToRow(l){
   };
 }
 async function _sbFetch(path,opts){
-  // Si hay sesión Supabase activa, usar su token (RLS reconoce al usuario @4housing).
-  // Si no, cae a la clave anon (comportamiento previo).
+  // Pedir el token de sesión vigente directamente al SDK en cada llamada.
+  // Es más confiable que depender de _sbAccessToken (que puede quedar viejo tras
+  // recargas o redirects). Si hay sesión, RLS reconoce al usuario @4housing.
+  // Si no hay sesión, cae a la clave anon (lecturas públicas que aún lo permitan).
   var authToken=_sbAccessToken||SUPABASE_KEY;
+  try{
+    if(_sbClient){
+      var s=await _sbClient.auth.getSession();
+      var tok=s&&s.data&&s.data.session&&s.data.session.access_token;
+      if(tok){authToken=tok;_sbAccessToken=tok;}
+    }
+  }catch(e){/* si falla, usa el fallback ya calculado */}
   return fetch(SUPABASE_URL+'/rest/v1/'+path,{
     ...opts,
     headers:{
